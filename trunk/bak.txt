@@ -1,0 +1,708 @@
+/*
+* Copyright (c) 2005 by DoZerg.  ALL RIGHTS RESERVED. 
+* Consult your license regarding permissions and restrictions.
+*/
+#pragma once
+
+//redundant codes
+namespace MAIN_CPP{//main.cpp
+	union CAF{
+		double a;
+		struct{
+			long fl:32;
+			long fh:20;
+			long e:11;
+			long s:1;
+		}b;
+		CAF(double x=0):a(x){
+			cout<<sizeof b<<endl;
+			cout<<a<<"=	"<<
+				dec<<b.s<<' '<<hex
+				<<(b.e&0x7ff)<<' '
+				<<(b.fh&0xfffff)<<' '
+				<<b.fl<<endl;
+		}
+	};
+	template<long N>
+	struct Base{
+		long v_;
+		Base(long v):v_(v){}
+	};
+	template<long N>
+	struct A:public Base<N>{
+		A(long v=0):Base<N>(v){}
+		A(const Base<N> & v):Base<N>(v){}
+		//	A(const B & v):v_(v.v_){}
+	};
+	template<long N>
+	struct B:public Base<N>{
+		B(long v=0):Base<N>(v){}
+		B(const Base<N> & v):Base<N>(v){}
+		//	B(const A & v):Base(v.v_){}
+	};
+	template<long N,typename T>class TT{};
+
+	template<
+		long N,
+		template<long,typename>class T
+	>struct TC
+	{
+		T<N,long> x;
+		TC();
+		const TC & fn(const TC &) const;
+		void gn(const TC &);
+	};
+	template<long N,template<long,typename>class T>
+	TC<N,T>::TC(){cout<<"ctor\n";}
+	template<long N,template<long,typename>class T>
+	const TC<N,T> & TC<N,T>::fn(const TC & v) const{
+		cout<<"fn\n";
+		return *this;
+	}
+	template<long N,template<long,typename>class T>
+	void TC<N,T>::gn(const TC & v){
+		cout<<"gn\n";
+	}
+	template<long N,template<long,typename>class T>class DT:public TC<N,T>{};
+
+	char d2hex( int d ){
+		return "0123456789ABCDEF"[ d ];
+	}
+}
+namespace SIGNEDHUGELONG_H{//SignedHugeLong.h
+/*/#define TEMPLATE_HEAD	template<long N,typename _DataType,template<long,typename>class _Alloc>
+//#define TEMPLATE_HEAD1	template<long N,typename _DataType,template<long,typename>class _Alloc>	\
+//							template<class _Alloc1>
+//#define MY_TYPE		SignedHugeLong<N,_DataType,_Alloc>
+//#define MY_TYPE1	SignedHugeLong<N,_DataType,_Alloc1>
+//For operator +,-,*,/ and % implementation
+#define SIGNED_MEMBER_DEFINE_OPERATOR(oper)	\
+	template<typename _ValueType>	\
+		const SignedHugeLong operator ##oper##(const _ValueType & value) const{	\
+		return MY_TYPE(*this).operator ##oper##=(value);	\
+		}	\
+	const SignedHugeLong operator ##oper##(const SignedHugeLong & value) const{	\
+		return MY_TYPE(*this).operator ##oper##=(value);	\
+	}	
+#define SIGNED_GLOBAL_DEFINE_OPERATOR(oper)	\
+	template<typename _ValueType,long N,class D,class T>	\
+		inline const SignedHugeLong<N,D,T> operator ##oper##(const _ValueType & value1,const SignedHugeLong<N,D,T> & value2){	\
+			return SignedHugeLong<N,D,T>(value1).operator ##oper##=(value2);	\
+		}
+//*/
+/*
+		template<class _Alloc1>
+		const __Myt & operator -=(const MY_TYPE1 & value){
+			return OperatorSub(value);
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator *=(const MY_TYPE1 & value){
+			return OperatorMult(value);
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator /=(const MY_TYPE1 & value){
+			bool sign(GetSignBit());
+			if(sign)
+				Minus();
+			OperatorDiv(abs(value));
+			if(sign^value.GetSignBit())
+				Minus();
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator &=(const MY_TYPE1 & value){
+			return OperatorAnd(value);
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator |=(const MY_TYPE1 & value){
+			return OperatorOr(value);
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator ^=(const MY_TYPE1 & value){
+			return OperatorXor(value);
+			return *this;
+		}
+		template<class _Alloc1>
+		const __Myt & operator %=(const MY_TYPE1 & value){
+			bool sign(GetSignBit());
+			if(sign)
+				Minus();
+			OperatorDiv(abs(value),false);
+			if(sign)
+				Minus();
+			return *this;
+		}
+		template<class _Alloc1>
+		bool operator ==(const MY_TYPE1 & value) const{return OperatorEqual(value);}
+		template<class _Alloc1>
+		bool operator !=(const MY_TYPE1 & value) const{return !operator ==(value);}
+	//	SIGNED_MEMBER_DEFINE_OPERATOR(+);
+	//	SIGNED_MEMBER_DEFINE_OPERATOR(-);
+	//	SIGNED_MEMBER_DEFINE_OPERATOR(*);
+	//	SIGNED_MEMBER_DEFINE_OPERATOR(/);
+	//	SIGNED_MEMBER_DEFINE_OPERATOR(%);
+		template<class _Alloc1>
+		friend __Myt Power(const __Myt & value1,const MY_TYPE1 & value2){
+			return __Myt(value1).OperatorPower(value);
+		}
+		friend bool operator >(const SignedHugeLong & value1,const SignedHugeLong & value2){
+			bool t(value2.GetSignBit());
+			if(t^value1.GetSignBit())
+				return t;
+			return value1.OperatorLarger(value2);
+		}
+		friend bool operator <(const SignedHugeLong & value1,const SignedHugeLong & value2){
+			bool t(value1.GetSignBit());
+			if(t^value2.GetSignBit())
+				return t;
+			return value1.OperatorSmaller(value2);
+		}
+		friend bool operator >=(const SignedHugeLong & value1,const SignedHugeLong & value2){
+			bool t(value2.GetSignBit());
+			if(t^value1.GetSignBit())
+				return t;
+			return value1.OperatorNotSmaller(value2);
+		}
+		friend bool operator <=(const SignedHugeLong & value1,const SignedHugeLong & value2){
+			bool t(value1.GetSignBit());
+			if(t^value2.GetSignBit())
+				return t;
+			return value1.OperatorNotLarger(value2);
+		}
+//		template<typename __OutStreamType>
+//			inline friend __OutStreamType & operator <<(__OutStreamType & os,const SignedHugeLong & value){
+//				return os<<value.ToString();
+//			}
+//*/
+//others functions
+//	template<typename __ValueType,long N,typename _DataType,class _Alloc>
+//		inline bool operator ==(const __ValueType & value1,const MY_TYPE & value2){
+//			return value2.operator ==(value1);
+//		}
+//	template<typename __ValueType,long N,typename _DataType,class _Alloc>
+//		inline bool operator !=(const __ValueType & value1,const MY_TYPE & value2){
+//			return value2.operator !=(value1);
+//		}
+//	SIGNED_GLOBAL_DEFINE_OPERATOR(+);
+//	SIGNED_GLOBAL_DEFINE_OPERATOR(-);
+//	SIGNED_GLOBAL_DEFINE_OPERATOR(*);
+//	SIGNED_GLOBAL_DEFINE_OPERATOR(/);
+//	SIGNED_GLOBAL_DEFINE_OPERATOR(%);
+//*/
+//#undef SIGNED_MEMBER_DEFINE_OPERATOR
+//#undef SIGNED_GLOBAL_DEFINE_OPERATOR
+//#undef TEMPLATE_HEAD
+//#undef TEMPLATE_HEAD1
+//#undef MY_TYPE
+//#undef MY_TYPE1}
+namespace UNSIGNEDHUGELONG_H{//UnsignedHugeLong.h
+/*/#define TEMPLATE_HEAD template<long N,typename _DataType,template<long,typename>class _Alloc>
+//#define MY_TYPE1	UnsignedHugeLong<N,_DataType,_Alloc1>
+//For operator +,-,*,/ and % implementation
+#define UNSIGNED_MEMBER_DEFINE_OPERATOR(oper)	\
+	template<typename __ValueType>	\
+		const UnsignedHugeLong operator ##oper##(const __ValueType & value) const{	\
+			return __Myt(*this).operator ##oper##=(value);	\
+		}	\
+	const UnsignedHugeLong operator ##oper##(const UnsignedHugeLong & value) const{	\
+		return __Myt(*this).operator ##oper##=(value);	\
+	}
+#define UNSIGNED_GLOBAL_DEFINE_OPERATOR(oper)	\
+	template<typename __ValueType,long N,typename D,class T>	\
+		inline const UnsignedHugeLong<N,D,T> operator ##oper##(const __ValueType & value1,const UnsignedHugeLong<N,D,T> & value2){	\
+			return UnsignedHugeLong<N,D,T>(value1).operator ##oper##=(value2);	\
+		}
+//*/
+/*
+		const __Myt & operator +=(const __Myt &);
+		const __Myt & operator -=(const __Myt &);
+		const __Myt & operator *=(const __Myt &);
+		const __Myt & operator /=(const __Myt &);
+		const __Myt & operator &=(const __Myt &);
+		const __Myt & operator |=(const __Myt &);
+		const __Myt & operator ^=(const __Myt &);
+		const __Myt & operator %=(const __Myt &);
+		bool operator ==(const __Myt &) const;
+		bool operator !=(const __Myt &) const;
+		const __Myt Power(const __Myt &);
+		const std::string ToString(int = 10) const;
+		UNSIGNED_MEMBER_DEFINE_OPERATOR(+);
+		UNSIGNED_MEMBER_DEFINE_OPERATOR(-);
+		UNSIGNED_MEMBER_DEFINE_OPERATOR(*);
+		UNSIGNED_MEMBER_DEFINE_OPERATOR(/);
+		UNSIGNED_MEMBER_DEFINE_OPERATOR(%);
+//friend functions. for several reasons they can't be implemented outside 
+		inline friend bool operator >(const __Myt & value1,const __Myt & value2){
+			return value1.OperatorLarger(value2);
+		}
+		inline friend bool operator <(const __Myt & value1,const __Myt & value2){
+			return value1.OperatorSmaller(value2);
+		}
+		inline friend bool operator >=(const __Myt & value1,const __Myt & value2){
+			return value1.OperatorNotSmaller(value2);
+		}
+		inline friend bool operator <=(const __Myt & value1,const __Myt & value2){
+			return value1.OperatorNotLarger(value2);
+		}
+		template<typename __OutStreamType>
+			inline friend __OutStreamType & operator <<(__OutStreamType & os,const __Myt & value){
+				return os<<value.ToString();
+			}
+		inline friend std::ostream & operator <<(std::ostream & os,const __Myt & value){
+			return os<<value.ToString((0xc00&os.flags())>>7);	//is there a better way to deal with the base(8,10 or 16)?
+		}
+//*/
+/*/definition
+//public:
+	TEMPLATE_HEAD inline __Myt & __Myt::operator =(const std::string & value){
+			FromString(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator +() const{
+			return __Myt(*this);
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator -() const{
+			return __Myt(*this).Minus();
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator ~() const{
+			return __Myt(*this).Complement();
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator >>(long value) const{
+			return __Myt(*this).RightShift(value);
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator <<(long value) const{
+			return __Myt(*this).LeftShift(value);
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator ++(){		//you could throw "overflow" if you want
+			Increase();
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator ++(int){
+			__Myt tmp(*this);
+			operator ++();
+			return tmp;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator --(){
+			Decrease();
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::operator --(int){
+			__Myt tmp(*this);
+			operator --();
+			return tmp;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator >>=(long value){
+			RightShift(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator <<=(long value){
+			LeftShift(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator +=(const UnsignedHugeLong & value){
+			OperatorAdd(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator -=(const UnsignedHugeLong & value){
+			OperatorSub(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator *=(const UnsignedHugeLong & value){
+			OperatorMult(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator /=(const UnsignedHugeLong & value){
+			OperatorDiv(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator &=(const UnsignedHugeLong & value){
+			OperatorAnd(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator |=(const UnsignedHugeLong & value){
+			OperatorOr(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator ^=(const UnsignedHugeLong & value){
+			OperatorXor(value);
+			return *this;
+		}
+	TEMPLATE_HEAD inline const __Myt & __Myt::operator %=(const UnsignedHugeLong & value){
+			OperatorDiv(value,false);
+			return *this;
+		}
+	TEMPLATE_HEAD inline bool __Myt::operator ==(const UnsignedHugeLong & value) const{
+			return OperatorEqual(value);
+		}
+	TEMPLATE_HEAD inline bool __Myt::operator !=(const UnsignedHugeLong & value) const{
+			return !operator ==(value);
+		}
+	TEMPLATE_HEAD inline const __Myt __Myt::Power(const UnsignedHugeLong & value){
+			return __Myt(*this).OperatorPower(value);
+		}
+	TEMPLATE_HEAD inline const std::string __Myt::ToString(int BaseValue) const{
+			return HugeNumberBase<N,_DataType,_Alloc>::ToString(BaseValue);
+		}
+//others:
+	template<typename __ValueType,long N,typename _DataType,class _Alloc>
+		inline bool operator ==(const __ValueType & value1,const __Myt & value2){
+			return value2.operator ==(value1);
+		}
+	template<typename __ValueType,long N,typename _DataType,class _Alloc>
+		inline bool operator !=(const __ValueType & value1,const __Myt & value2){
+			return value2.operator !=(value1);
+		}
+	UNSIGNED_GLOBAL_DEFINE_OPERATOR(+);
+	UNSIGNED_GLOBAL_DEFINE_OPERATOR(-);
+	UNSIGNED_GLOBAL_DEFINE_OPERATOR(*);
+	UNSIGNED_GLOBAL_DEFINE_OPERATOR(/);
+	UNSIGNED_GLOBAL_DEFINE_OPERATOR(%);
+//*/
+//#undef UNSIGNED_MEMBER_DEFINE_OPERATOR
+//#undef UNSIGNED_GLOBAL_DEFINE_OPERATOR
+//#undef TEMPLATE_HEAD
+//#undef MY_TYPE1
+}
+namespace HUGELONGNUMBER_H{//HugeLongNumber.h
+//#define TEMPLATE_HEAD	template<long N,typename _DataType,template<long,typename>class _Alloc>
+//#define UNSIGNED_TYPE	UnsignedHugeLong<N,_DataType,_Alloc>
+//#define SIGNED_TYPE		SignedHugeLong<N,_DataType,_Alloc>
+//others:
+/*
+#define GLOBAL_DEFINE_OPERATOR(oper)	\
+	template<long N,class T1,class D1,class T2,class D2>	\
+		inline const UnsignedHugeLong<N,D1,T1> operator ##oper##(const SignedHugeLong<N,D2,T2> & value1,const UnsignedHugeLong<N,D1,T1> & value2){	\
+			return UnsignedHugeLong<N,D1,T1>(value2).operator ##oper##=(value1);	\
+		}	\
+	template<long N,class T1,class D1,class T2,class D2>	\
+		inline const UnsignedHugeLong<N,D1,T1> operator ##oper##(const UnsignedHugeLong<N,D1,T1> & value1,const SignedHugeLong<N,D2,T2> & value2){	\
+			return UnsignedHugeLong<N,D1,T1>(value1).operator ##oper##=(value2);	\
+		}
+	GLOBAL_DEFINE_OPERATOR(+);
+	GLOBAL_DEFINE_OPERATOR(-);
+	GLOBAL_DEFINE_OPERATOR(*);
+	GLOBAL_DEFINE_OPERATOR(/);
+	GLOBAL_DEFINE_OPERATOR(%);
+#undef GLOBAL_DEFINE_OPERATOR
+//*/
+//#undef TEMPLATE_HEAD
+//#undef UNSIGNED_TYPE
+//#undef SIGNED_TYPE
+}
+namespace HUGENUMBERBASE_H{//HugeNumberBase.h
+	//forward declaration
+//	TEMPLATE_HEAD class UnsignedHugeLong;
+//	TEMPLATE_HEAD class SignedHugeLong;
+}
+namespace TESTS_H{//Tests.h
+/*
+		SignedHugeLong<4,__Signed,DataInHeap> x(3);
+		SignedHugeLong<4,__Signed,DataInStack> y(40);
+		x += y;
+		cout<<x<<endl;
+		y += x;
+		cout<<y<<endl;
+void Test01()
+{			//Test for the operators
+	cout<<"	Test 01"<<endl;
+	ulong2 x("3");
+	slong2 y(-5);
+//	cout<<oct;
+	cout<<"x=	"<<x<<endl;
+	cout	<<"y=	"<<y<<endl<<endl;
+	cout	<<"x+y=	"<<(x+y)<<endl;
+	cout	<<"y+x=	"<<(y+x)<<endl;
+	cout	<<"x+x=	"<<(x+x)<<endl;
+	cout	<<"x+1=	"<<(x+1)<<endl;
+	cout	<<"1+x=	"<<(1+x)<<endl;
+	cout	<<"y+y=	"<<(y+y)<<endl;
+	cout	<<"y+1=	"<<(y+1)<<endl;
+	cout	<<"1+y=	"<<(1+y)<<endl;
+	cout	<<"x+1=	"<<(x+"1")<<endl;
+	cout	<<"1+x=	"<<("1"+x)<<endl;
+	cout	<<"y+1=	"<<(y+"1")<<endl;
+	cout	<<"1+y=	"<<("1"+y)<<endl;
+	cout	<<endl;
+	unsigned __int64 a(3);
+	__int64 b(-5);
+	cout<<"a=	"<<a<<endl
+		<<"b=	"<<b<<endl<<endl
+		<<"a+b=	"<<(a+b)<<endl
+		<<"b+a=	"<<(b+a)<<endl
+		<<"a+a=	"<<(a+a)<<endl
+		<<"a+1=	"<<(a+1)<<endl
+		<<"1+a=	"<<(1+a)<<endl
+		<<"b+b=	"<<(b+b)<<endl
+		<<"b+1=	"<<(b+1)<<endl
+		<<"1+b=	"<<(1+b)<<endl
+		<<endl;
+	cout<<(2+(1+x)+3)<<endl;
+}
+void Test02()
+{			//Test for the member operators
+	cout<<"	Test 02"<<endl;
+	ulong2 x("3");
+	slong2 y(5);
+	x=3;
+	cout<<"x=	"<<x<<endl							;
+	cout	<<"y=	"<<y<<endl<<endl				;
+	cout	<<"x+=y	"<<(x+=y)<<endl					;
+	cout	<<"y+=x	"<<(y+=x)<<endl					;
+	cout	<<"x+=x	"<<(x+=x)<<endl					;
+	cout	<<"x+=1	"<<(x+=1)<<endl					;
+	cout	<<"y+=y	"<<(y+=y)<<endl					;
+	cout	<<"y+=1	"<<(y+=1)<<endl					;
+	cout	<<"x+=1	"<<(x+="1")<<endl				;
+	cout	<<"x+=1	"<<(x+=std::string("1"))<<endl	;
+	cout	<<"y+=1	"<<(y+="1")<<endl				;
+	cout	<<endl;
+}
+void Test03()
+{			//Test for the Constructors
+	cout<<"	Test 03"<<endl;
+#define bType
+#ifdef bType
+#define TypeA ulong2
+#define TypeB slong2
+#else
+#define TypeA slong2
+#define TypeB ulong2
+#endif
+	TypeA x1;
+	TypeB y1;
+	TypeA x2(-3);
+	TypeA x3("-3");
+	TypeA x4(std::string("-3"));
+	TypeA x5(x1);
+	TypeA x6(y1);
+#undef bType
+#undef TypeA
+#undef TypeB
+}
+void Test04()
+{			//Test for consistency with signed __Signed and unsigned __Signed
+	cout<<"	Test 04"<<endl;
+	ulong2 x=-3;
+	slong2 y=-10;
+//#pragma message( "Warning:Test04 for Test Macro" )
+	unsigned __Signed xx=-3;
+	__Signed yy=-10;
+	cout<<y+x<<endl;
+	cout<<y-x<<endl;
+	cout<<y*x<<endl;
+	cout<<y/x<<endl<<endl;
+	cout<<yy+xx<<endl;
+	cout<<yy-xx<<endl;
+	cout<<yy*xx<<endl;
+	cout<<yy/xx<<endl;
+}
+void Test05()
+{			//Test for the different type conversion
+	cout<<"	Test 05"<<endl;
+	ulong2 x=-2;
+//	slong1 y=x;
+//	y=x;
+	x.show();
+//	y.show();
+//	cout<<x<<endl<<y<<endl;
+}
+void Test06()
+{			//Test for PerformanceProfile class and Calculagraph class
+	cout<<"	Test 06"<<endl;
+	DoZerg::UnsignedHugeLong<30,__Signed,DataInHeap> x=-1;
+	DoZerg::UnsignedHugeLong<40,__Signed,DataInHeap> y=-1;
+	DoZerg::UnsignedHugeLong<50,__Signed,DataInHeap> z=-1;
+	DoZerg::PerformanceProfile<3> pp;
+	pp.Reset();
+	for(int i=0;i<3;++i)
+	{
+		DoZerg::Calculagraph cal(0);
+		DoZerg::PerformanceProfile<3>::Start();
+		x.ToString();
+		cal();
+		DoZerg::PerformanceProfile<3>::PutMark();
+		y.ToString();
+		cal();
+		DoZerg::PerformanceProfile<3>::PutMark();
+		z.ToString();
+		cal();
+		DoZerg::PerformanceProfile<3>::End();
+	}
+	pp.Result();
+}
+void Test07()
+{			//Test for operator == and !=
+	cout<<"	Test 07"<<endl;
+	ulong2 x("-9");
+	slong2 y(-9);
+	cout<<(x!=-9?"Y":"N")<<endl;
+	cout<<("-9"!=x?"Y":"N")<<endl;
+	cout<<(x!=y?"Y":"N")<<endl;
+	cout<<(y!=-9?"Y":"N")<<endl;
+	cout<<(-9!=y?"Y":"N")<<endl;
+	cout<<(y!=x?"Y":"N")<<endl;
+	cout<<(x!=x?"Y":"N")<<endl;
+	cout<<(y!=y?"Y":"N")<<endl;
+}
+void Test08()
+{			//Test for operator %
+	cout<<"	Test 08"<<endl;
+	for(ulong1 x=1,y;x<100000;++x)
+		if((y=x%1000)<0||y>=1000)
+			cout<<"x="<<x<<"	x%1000=	"<<y<<endl;
+}
+void Test09()
+{			//Test for data conversion and __DataType
+	cout<<"	Test 09"<<endl;
+	ulong2 x=1,y=0x80abcdef;
+	cout<<__Signed(0x80abcdef)<<' '<<slong2(y)<<'\n';
+	cout<<hex<<x<<'\n'<<y<<'\n';
+	cout<<oct<<x<<'\n'<<y<<'\n';
+	cout<<dec<<x<<'\n'<<y<<'\n';
+	x.show();
+	y.show();
+}
+void Test10()
+{			//Test for different __Alloc conversions
+	SignedHugeLong<4,__Signed,DataInHeap> x(5);
+	SignedHugeLong<4,__Signed,DataInStack> y("3");
+	cout<<"x=	"<<x<<endl;
+	cout	<<"y=	"<<y<<endl<<endl;
+	cout	<<"x+y=	"<<(x+y)<<endl;
+	cout	<<"y+x=	"<<(y+x)<<endl;
+	x = y;
+	cout<<"x=	"<<x<<endl;
+	y = x;
+	cout	<<"y=	"<<y<<endl;
+	x = y+3;
+	cout<<"x=	"<<x<<endl;
+	y = x-4;
+	cout	<<"y=	"<<y<<endl;
+}
+//*/
+}
+
+//class DataAutoSelect	:	with a allocation selection strategy(if N<100 then DataInStack,else DataInHeap)
+		template<long N,typename _DataType>
+		class DataAutoSelect
+		{
+			template<bool,class T1,class T2>struct IfType{	typedef T1 RType;	};
+			template<class T1,class T2>struct IfType<false,T1,T2>{	typedef T2 RType;	};
+			typedef typename IfType<
+				(N < 100),
+				DataInStack<N,_DataType>,
+				DataInHeap<N,_DataType>
+			>::RType RType;
+		public:
+			static const long Length = RType::Length;
+			const _DataType & operator [](long index) const{return data_[index];}
+			_DataType & operator [](long index){return data_[index];}
+			void SetValue(const _DataType & val){data_.SetValue(val);}
+			template<class T>
+			void Copy(const T & other,long my_start,long oth_start){
+				data_.Copy(other,my_start,oth_start);
+			}
+			template<class T>
+			bool Compare(const T & other) const{return data_.Compare(other);}
+		private:
+			RType data_;
+		};
+
+	//	template<class A>
+	//	explicit HugeNumberBase(const HugeNumberBase<N,DataType,A> & value){FromSelfA(value);}
+	//	template<long M>
+	//	explicit HugeNumberBase(const HugeNumberBase<M,DataType,Alloc> & value){FromSelfB(value);}
+	//	template<class A>
+	//	__Myt & operator =(const HugeNumberBase<N,DataType,A> & value){
+	//		FromSelfA(value);
+	//		return *this;
+	//	}
+	//	template<long M>
+	//	__Myt & operator =(const HugeNumberBase<M,DataType,Alloc> & value){
+	//		FromSelfB(value);
+	//		return *this;
+	//	}
+
+	//	__Myt & LeftShift(){				//left shift 1 bit			//O(N)
+	//		for(long i = 0,shift = EACH_BITS - 1;i < N - 1;++i)
+	//			data_[i] = (data_[i] << 1) + (data_[i + 1] >> shift);
+	//		data_[N-1] <<= 1;
+	//		return *this;
+	//	}
+	//	template<class A>		//different Alloc
+	//	void FromSelfA(const HugeNumberBase<N,DataType,A> & value){data_.Copy(value.data_,0,0);}	//O(N)
+	//	template<long M>		//different range
+	//	void FromSelfB(const HugeNumberBase<M,DataType,Alloc> & value){	//O(N)
+	//		WARNING_INFORMATION(Make_sure_no_data_is_lost);
+	//		data_.SetAll(value.GetSignBit());
+	//		if(M > N)
+	//			data_.Copy(value.data_,0,M - N);
+	//		else
+	//			data_.Copy(value.data_,N - M,0);
+	//	}
+	};
+
+	/*
+		template<long N,typename _DataType>
+		class DataReferenceCount{
+			struct DataRCImp{
+				_DataType d_[N];
+				int ref_;
+			};
+		public:
+			static const long Length = N;
+			~DataReferenceCount(){
+				if(--data_->ref_ == 0)
+					delete data_;
+			}
+			DataReferenceCount():data_(new DataRCImp){data_->ref_ = 1;}
+			DataReferenceCount(const DataReferenceCount & v):data_(v.data_){++data_->ref_;}
+			DataReferenceCount & operator =(const DataReferenceCount & v){
+				++v.data_->ref_;
+				if(--data_->ref_ == 0)
+					delete data_;
+				data_ = v.data_;
+				return *this;
+			}
+			const _DataType & operator [](long index) const{return data_->d_[index];}
+			_DataType & operator [](long index){
+				CopyOnWrite();
+				return data_->d_[index];
+			}
+			void SetValue(const _DataType & val){
+				CopyOnWrite();
+				for(long i = 0;i < Length;++i)
+					data_->d_[i] = val;
+			}
+			template<class T>
+			void Copy(const T & other,long my_start,long oth_start){
+				CopyOnWrite();
+				for(long i = my_start,j = oth_start;i < Length && j < T::Length;++i,++j)
+					data_->d_[i] = other[j];
+			}
+			template<class T>
+			bool Compare(const T & other) const{
+				if(Length != T::Length)
+					return false;
+				for(long i = 0;i < Length;++i)
+					if(data_->d_[i] != other[i])
+						return false;
+				return true;
+			}
+		private:
+			void CopyOnWrite(){
+				if(data_->ref_ > 1){
+					--data_->ref_;
+					DataRCImp * tmp = new DataRCImp(*data_);
+					data_ = tmp;
+					data_->ref_ = 1;
+				}
+			}
+		private:
+			DataRCImp * data_;
+		};
+	//*/

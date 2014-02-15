@@ -1,0 +1,40 @@
+/***************************    TO DO    ************************
+1.Using Exception-Class or flags to indicate errors
+(DONE)2.Using Memory-Class to indicate Memory Allocation Strategy
+(DONE)3.signed, unsigned and ODT type conversions with operator +,-,*,/,%,&,|,^
+(DONE)4.Using Traits to eliminate type specialization with unsigned long
+5.Performance Profile, especially for operator << and >>
+6.Try to implement operator bool()
+7.Conversions between types with different range, different DataType, and different Memory Allocation Strategy
+8.Implement more Memory Allocation Strategies:
+	(DONE)data in heap,
+	(DONE)data in stack,
+	(DONE)copy on write(reference count)
+9.[SignedHugeLong::operator /=(const UnsignedHugeLong &)] is wrong, according to [(signed long) /= (unsigned long)] when unsigned vaule is minus
+  so the result of (U / S) and (S % U) are wrong, U = unsigned, S = signed
+10.The return type of (U - S),(U * S),(S / U),(U | S) and (U ^ S) are wrong, U = unsigned, S = signed
+11.Get the iostream flags with a correct way in:
+	inline friend std::ostream & operator <<(std::ostream &,const __Myt &);
+	__Myt = SignedHugeLong and UnsignedHugeLong
+	(DONE)including hex, oct, dec, uppercase, and showbase
+12.SignedHugeLong, UnsignedHugeLong's constructors should deal with interger, string, SignedHugeLong,
+   UnsignedHugeLong, and other types, but be wary of the bit size
+13.Should UnsignedHugeLong have abs value?
+14.Should operator >> and << deal with wchar, or other type I/O streams?
+
+***************************************************************/
+
+/**************************  Bug Reports  **********************
+051201	解决HugeNumberBase中OperatorDiv当*this=32到64时，对1000取余的错误。
+071206	修复HugeNumberBase中AddOne在进位时总往同一个位置加1的错误。
+
+***************************************************************/
+
+/*******************  Platform  ********************************
+1.gcc编译器中，
+	std::istringstream is("-1");
+	unsigned int i;
+	is>>i;
+  不会给i赋值，可能是因为unsigned int不接受负值。
+
+***************************************************************/
