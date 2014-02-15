@@ -1,0 +1,128 @@
+/*
+* Copyright (c) 2005 by DoZerg.  ALL RIGHTS RESERVED. 
+* Consult your license regarding permissions and restrictions.
+*/
+#pragma once
+
+#include "Tests.h"
+
+#ifdef TEST
+
+#ifdef INTER_TEST
+
+typedef __TestSigned1	__I_TestType1;
+typedef __TestUnsigned1	__I_TestType2;
+
+void I_Test001(){		//==,!=,<,>,<=,>=
+	cout<<"\tI_Test001"<<endl;
+	__I_TestType1 a(30);
+	__I_TestType2 b(20),c(30),d(40);
+	__Signed al(30);
+	__Unsigned bl(20),cl(30),dl(40);
+	cout<<(a == b ? "Yes" : "No")<<' '<<(al == bl ? "Yes" : "No")<<endl;
+	cout<<(a == c ? "Yes" : "No")<<' '<<(al == cl ? "Yes" : "No")<<endl;
+	cout<<(b == a ? "Yes" : "No")<<' '<<(bl == al ? "Yes" : "No")<<endl;
+	cout<<(c == a ? "Yes" : "No")<<' '<<(cl == al ? "Yes" : "No")<<endl;
+	cout<<(a != b ? "Yes" : "No")<<' '<<(al != bl ? "Yes" : "No")<<endl;
+	cout<<(a != c ? "Yes" : "No")<<' '<<(al != cl ? "Yes" : "No")<<endl;
+	cout<<(b != a ? "Yes" : "No")<<' '<<(bl != al ? "Yes" : "No")<<endl;
+	cout<<(c != a ? "Yes" : "No")<<' '<<(cl != al ? "Yes" : "No")<<endl;
+	cout<<(a < b ? "Yes" : "No")<<' '<<(al < bl ? "Yes" : "No")<<endl;
+	cout<<(a < c ? "Yes" : "No")<<' '<<(al < cl ? "Yes" : "No")<<endl;
+	cout<<(a < d ? "Yes" : "No")<<' '<<(al < dl ? "Yes" : "No")<<endl;
+	cout<<(b < a ? "Yes" : "No")<<' '<<(bl < al ? "Yes" : "No")<<endl;
+	cout<<(c < a ? "Yes" : "No")<<' '<<(cl < al ? "Yes" : "No")<<endl;
+	cout<<(d < a ? "Yes" : "No")<<' '<<(dl < al ? "Yes" : "No")<<endl;
+	cout<<(a > b ? "Yes" : "No")<<' '<<(al > bl ? "Yes" : "No")<<endl;
+	cout<<(a > c ? "Yes" : "No")<<' '<<(al > cl ? "Yes" : "No")<<endl;
+	cout<<(a > d ? "Yes" : "No")<<' '<<(al > dl ? "Yes" : "No")<<endl;
+	cout<<(b > a ? "Yes" : "No")<<' '<<(bl > al ? "Yes" : "No")<<endl;
+	cout<<(c > a ? "Yes" : "No")<<' '<<(cl > al ? "Yes" : "No")<<endl;
+	cout<<(d > a ? "Yes" : "No")<<' '<<(dl > al ? "Yes" : "No")<<endl;
+	cout<<(a <= b ? "Yes" : "No")<<' '<<(al <= bl ? "Yes" : "No")<<endl;
+	cout<<(a <= c ? "Yes" : "No")<<' '<<(al <= cl ? "Yes" : "No")<<endl;
+	cout<<(a <= d ? "Yes" : "No")<<' '<<(al <= dl ? "Yes" : "No")<<endl;
+	cout<<(b <= a ? "Yes" : "No")<<' '<<(bl <= al ? "Yes" : "No")<<endl;
+	cout<<(c <= a ? "Yes" : "No")<<' '<<(cl <= al ? "Yes" : "No")<<endl;
+	cout<<(d <= a ? "Yes" : "No")<<' '<<(dl <= al ? "Yes" : "No")<<endl;
+	cout<<(a >= b ? "Yes" : "No")<<' '<<(al >= bl ? "Yes" : "No")<<endl;
+	cout<<(a >= c ? "Yes" : "No")<<' '<<(al >= cl ? "Yes" : "No")<<endl;
+	cout<<(a >= d ? "Yes" : "No")<<' '<<(al >= dl ? "Yes" : "No")<<endl;
+	cout<<(b >= a ? "Yes" : "No")<<' '<<(bl >= al ? "Yes" : "No")<<endl;
+	cout<<(c >= a ? "Yes" : "No")<<' '<<(cl >= al ? "Yes" : "No")<<endl;
+	cout<<(d >= a ? "Yes" : "No")<<' '<<(dl >= al ? "Yes" : "No")<<endl;
+}
+void I_Test002(){		//+=,-=,*=,/=,%=,&=,|=,^=
+	cout<<"\tI_Test002"<<endl;
+	__I_TestType1 a(300);
+	__I_TestType2 b(7);
+	__Signed al(300);
+	__Unsigned bl(7);
+	cout<<"(a += b)\t"<<(a += b)<<' '<<(al += bl)<<endl;
+	cout<<"(b += a)\t"<<(b += a)<<' '<<(bl += al)<<endl;
+	cout<<"(a -= b)\t"<<(a -= b)<<' '<<(al -= bl)<<endl;
+	cout<<"(b -= a)\t"<<(b -= a)<<' '<<(bl -= al)<<endl;
+	cout<<"(a *= b)\t"<<(a *= b)<<' '<<(al *= bl)<<endl;
+	cout<<"(b *= a)\t"<<(b *= a)<<' '<<(bl *= al)<<endl;
+	a = al = 10;b = bl = -5;
+	cout<<"(a /= b)\t"<<(a /= b)<<' '<<(al /= bl)<<endl;	//wrong!
+	a = al = 10;
+	cout<<"(b /= a)\t"<<(b /= a)<<' '<<(bl /= al)<<endl;
+	a = al = 10;b = bl = -7;
+	cout<<"(a %= b)\t"<<(a %= b)<<' '<<(al %= bl)<<endl;
+	a = al = -10;b = bl = 75;
+	cout<<"(b %= a)\t"<<(b %= a)<<' '<<(bl %= al)<<endl;
+	a = al = 100;b = bl = 123;
+	cout<<"(a &= b)\t"<<(a &= b)<<' '<<(al &= bl)<<endl;
+	cout<<"(b &= a)\t"<<(b &= a)<<' '<<(bl &= al)<<endl;
+	cout<<"(a |= b)\t"<<(a |= b)<<' '<<(al |= bl)<<endl;
+	cout<<"(b |= a)\t"<<(b |= a)<<' '<<(bl |= al)<<endl;
+	cout<<"(a ^= b)\t"<<(a ^= b)<<' '<<(al ^= bl)<<endl;
+	cout<<"(b ^= a)\t"<<(b ^= a)<<' '<<(bl ^= al)<<endl;
+}
+void I_Test003(){		//+,-,*,/,%,&,|,^
+	cout<<"\tI_Test003"<<endl;
+	__Signed al(-300);
+	__Unsigned bl(700);
+	__I_TestType1 a(al);
+	__I_TestType2 b(bl);
+	cout<<hex;
+	cout<<"(a + b)\t"<<(a + b)<<' '<<(al + bl)<<endl;
+	cout<<"(b + a)\t"<<(b + a)<<' '<<(bl + al)<<endl;
+	cout<<"(a - b)\t"<<(a - b)<<' '<<(al - bl)<<endl;
+	cout<<"(b - a)\t"<<(b - a)<<' '<<(bl - al)<<endl;	//wrong! Format error
+	cout<<"(a * b)\t"<<(a * b)<<' '<<(al * bl)<<endl;
+	cout<<"(b * a)\t"<<(b * a)<<' '<<(bl * al)<<endl;	//wrong! Format error
+	cout<<"(a / b)\t"<<(a / b)<<' '<<(al / bl)<<endl;	//wrong! Format error
+	cout<<"(b / a)\t"<<(b / a)<<' '<<(bl / al)<<endl;	//wrong!
+	cout<<"(a % b)\t"<<(a % b)<<' '<<(al % bl)<<endl;	//wrong!
+	cout<<"(b % a)\t"<<(b % a)<<' '<<(bl % al)<<endl;
+	cout<<"(a & b)\t"<<(a & b)<<' '<<(al & bl)<<endl;
+	cout<<"(b & a)\t"<<(b & a)<<' '<<(bl & al)<<endl;
+	cout<<"(a | b)\t"<<(a | b)<<' '<<(al | bl)<<endl;
+	cout<<"(b | a)\t"<<(b | a)<<' '<<(bl | al)<<endl;	//wrong! Format error
+	cout<<"(a ^ b)\t"<<(a ^ b)<<' '<<(al ^ bl)<<endl;
+	cout<<"(b ^ a)\t"<<(b ^ a)<<' '<<(bl ^ al)<<endl;	//wrong! Format error
+}
+void I_Test004(){		//special constructors
+	cout<<"\tI_Test004"<<endl;
+	ulong2 a(-3);
+	ulong3 b(a);
+	ulong1 c(a);
+	slong4 d(a);
+	slong1 e(a);
+	cout<<a<<endl
+		<<b<<endl
+		<<c<<endl
+		<<d<<endl
+		<<e<<endl;
+	cout<<hex
+		<<a<<endl
+		<<b<<endl
+		<<c<<endl
+		<<d<<endl
+		<<e<<endl;
+}
+
+#endif
+#endif
