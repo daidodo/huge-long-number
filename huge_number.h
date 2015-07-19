@@ -86,6 +86,20 @@ static int checkBase(const std::string & a)
     return r;
 }
 
+template<typename T>
+T getBits(const T & val, int pos, int bits)
+{
+    return (val >> pos) & ((T(1) << bits) - 1);
+}
+
+template<typename T>
+void setBits(T & val, int pos, int bits, const T & v)
+{
+    const T m = (T(1) << bits) - 1;
+    val &= ~(m << pos);
+    val += (v & m) << pos;
+}
+
 template<class T>
 class BitOp
 {
@@ -108,35 +122,52 @@ public:
         seek(p + kTotalBits);
     }
     bool read(int bits, __Int & val){
-        if(!value(p_, bits, val))
+        if(!get(p_, bits, val))
             return false;
         seek(p_ + bits);
         return true;
     }
     bool readReverse(int bits, __Int & val){
-        if(!value(p_ - bits, bits, val))
+        if(!get(p_ - bits, bits, val))
             return false;
         seek(p_ - bits);
         return true;
     }
+    void write(int bits, const __Int & val) {
+        const int kTotalBits = kEachBits * c_.size();
+        if (kTotalBits < p_ + bits)
+            c_.resize((p_ + bits + kEachBits - 1) / kEachBits);
+        set(p_, bits, val);
+        seek(p_ + bits);
+    }
 private:
-    bool value(int p, int bits, __Int & val) const{
+    bool get(int p, int bits, __Int & val) const{
         assert(0 < bits && bits <= kEachBits);
         const int kTotalBits = kEachBits * c_.size();
         if(p < 0 || kTotalBits <= p)
             return false;
         const int fi = p / kEachBits, ri = p % kEachBits;
-        if(kEachBits < ri + bits){
+        val = getBits(c_[fi], ri, bits);
+        if(kEachBits < ri + bits && size_t(fi + 1) < c_.size()){
             const int s1 = kEachBits - ri, s2 = bits - s1;
-            val = (c_[fi] >> ri) & ((__Int(1) << s1) - 1);
-            if(fi + 1 < c_.size())
-                val += (c_[fi + 1] & ((__Int(1) << s2) - 1)) << s1;
-        }else
-            val = (c_[fi] >> ri) & ((__Int(1) << bits) - 1);
+            setBits(val, s1, s2, getBits(c_[fi + 1], 0, s2));
+        }
+        return true;
+    }
+    bool set(int p, int bits, const __Int & val) {
+        assert(0 < bits && bits <= kEachBits);
+        const int kTotalBits = kEachBits * c_.size();
+        if (p < 0 || kTotalBits <= p)
+            return false;
+        const int fi = p / kEachBits, ri = p % kEachBits;
+        setBits(c_[fi], ri, bits, val);
+        if (kEachBits < ri + bits && size_t(fi + 1) < c_.size()) {
+            const int s1 = kEachBits - ri, s2 = bits - s1;
+            setBits(c_[fi + 1], 0, s2, getBits(val, s1, s2));
+        }
         return true;
     }
 };
-
 
 class HugeNumber
 {
@@ -277,8 +308,8 @@ public:
     friend inline std::ostream & operator <<(std::ostream & os, const __Myt & a){
         const auto fmt = os.flags();
         const int base = ((fmt & os.hex) ? 16 : ((fmt & os.oct) ? 8 : 10));
-        const bool uppercase = (fmt & os.uppercase);
-        const bool showbase = (fmt & os.showbase);
+        const bool uppercase = (0 != (fmt & os.uppercase));
+        const bool showbase = (0 != (fmt & os.showbase));
         return (os<<a.toString(base, uppercase, showbase));
     }
 
@@ -308,9 +339,17 @@ private:
     }
     void fromString(const std::string & a){ //TODO
         switch(checkBase(a)){
-            case 2:
-            case 3:
-            case 8:
+            case 2: {
+                data_.clear();
+                BitOp<__Data> bits(data_);
+                for (auto it = a.rbegin(); it != a.rend() && 'b' != *it && 'B' != *it; bits.write(1, *it++ - '0'));
+                break; }
+            case 3:data_.clear(); break;
+            case 8: {
+                data_.clear();
+                BitOp<__Data> bits(data_);
+                for (auto it = a.rbegin(); it != a.rend() && '+' != *it && '-' != *it; bits.write(3, *it++ - '0'));
+                break; }
             case 10:
             case 16:
             default:throw std::invalid_argument("Input is not a integer number");
@@ -345,7 +384,7 @@ private:
         std::string ret;
         BitOp<const __Data> bits(data_);
         bits.seekEnd();
-        for(__Int i;bits.readReverse(1, i);multWithTwo(ret, i));
+        for(__Int i;bits.readReverse(1, i);multWithTwo(ret, static_cast<int>(i)));
         //for(auto it = data_.rbegin();it != data_.rend();++it)
         //    for(int i = kEachBits - 1;i >= 0;--i)
         //        multWithTwo(ret, ((*it >> i) & 1));
