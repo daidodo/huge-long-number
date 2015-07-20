@@ -96,7 +96,7 @@ void test_ctor_str_base_case(int base, bool upper, string bstr, string head, str
 {
     string s(bstr);
     s.push_back(genChar(head));
-    genArray(s, 1000, body);
+    genArray(s, 200, body);
     {
         Int a(s), b('+' + s), aa, bb;
         ASSERT_EQ(s, a.toString(base, upper, true));
