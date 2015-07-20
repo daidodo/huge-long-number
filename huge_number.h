@@ -43,7 +43,7 @@ static int divByTwo(std::string & s, bool & end)
         c = (*it & 1);
         *it /= 2;
     }
-    const auto p = s.find_last_not_of("0") + 1;
+    const auto p = s.find_last_not_of(char(0)) + 1;
     end = !p;
     s.erase(p);
     return c;
@@ -51,7 +51,7 @@ static int divByTwo(std::string & s, bool & end)
 
 static void reverseAdd(std::string & s, int v)
 {
-    for(int i = 0, j = s.size() - 1;i <= j;++i, --j){
+    for(int i = 0, j = int(s.size() - 1);i <= j;++i, --j){
         const auto t = s[i];
         s[i] = s[j] + v;
         if(i < j)
@@ -133,7 +133,7 @@ class BitOp
 public:
     explicit BitOp(T & c):c_(c),p_(0){}
     void seek(int p){
-        const int kTotalBits = kEachBits * c_.size();
+        const int kTotalBits = int(kEachBits * c_.size());
         p_ = p;
         if(p_ > kTotalBits)
             p_ = kTotalBits;
@@ -141,7 +141,7 @@ public:
             p_ = 0;
     }
     void seekEnd(int p = 0){
-        const int kTotalBits = kEachBits * c_.size();
+        const int kTotalBits = int(kEachBits * c_.size());
         seek(p + kTotalBits);
     }
     bool read(int bits, __Int & val){
@@ -157,7 +157,7 @@ public:
         return true;
     }
     void write(int bits, const __Int & val) {
-        const int kTotalBits = kEachBits * c_.size();
+        const int kTotalBits = int(kEachBits * c_.size());
         if (kTotalBits < p_ + bits)
             c_.resize((p_ + bits + kEachBits - 1) / kEachBits);
         set(p_, bits, val);
@@ -166,7 +166,7 @@ public:
 private:
     bool get(int p, int bits, __Int & val) const{
         assert(0 < bits && bits <= kEachBits);
-        const int kTotalBits = kEachBits * c_.size();
+        const int kTotalBits = int(kEachBits * c_.size());
         if(p < 0 || kTotalBits <= p)
             return false;
         const int fi = p / kEachBits, ri = p % kEachBits;
@@ -179,7 +179,7 @@ private:
     }
     bool set(int p, int bits, const __Int & val) {
         assert(0 < bits && bits <= kEachBits);
-        const int kTotalBits = kEachBits * c_.size();
+        const int kTotalBits = int(kEachBits * c_.size());
         if (p < 0 || kTotalBits <= p)
             return false;
         const int fi = p / kEachBits, ri = p % kEachBits;
@@ -248,7 +248,7 @@ public:
             return (*this >>= (-a));
         if(!a || !*this)
             return *this;
-        const int kTotalBits = kEachBits * data_.size();
+        const int kTotalBits = int(kEachBits * data_.size());
         __Data r((kTotalBits + a + kEachBits - 1) / kEachBits);
         auto t = r.begin() + a / kEachBits, f = data_.begin();
         const int s1 = a % kEachBits;
@@ -271,7 +271,7 @@ public:
             return (*this <<= (-a));
         if(!a)
             return *this;
-        const int kTotalBits = kEachBits * data_.size();
+        const int kTotalBits = int(kEachBits * data_.size());
         if(a < kTotalBits){
             auto t = data_.begin(), f = t + a / kEachBits;
             const int s1 = a % kEachBits;
@@ -348,6 +348,7 @@ public:
     }
 private:
     explicit HugeNumber(bool) = delete;
+    HugeNumber & operator =(bool) = delete;
     template<typename T>
     void fromInteger(const T & a, std::true_type){
         sign_ = (a < 0);
@@ -423,9 +424,6 @@ private:
         BitOp<const __Data> bits(data_);
         bits.seekEnd();
         for(__Int i;bits.readReverse(1, i);multWithTwo(ret, static_cast<int>(i)));
-        //for(auto it = data_.rbegin();it != data_.rend();++it)
-        //    for(int i = kEachBits - 1;i >= 0;--i)
-        //        multWithTwo(ret, ((*it >> i) & 1));
         if(ret.empty())
             ret.push_back(0);
         if(sign_)
@@ -436,7 +434,7 @@ private:
     bool compareData(const __Data & a) const{
         if(data_.size() != a.size())
             return (data_.size() < a.size());
-        for(int i = a.size() - 1;i >= 0;--i)
+        for(int i = int(a.size() - 1);i >= 0;--i)
             if(data_[i] != a[i])
                 return (data_[i] < a[i]);
         return false;
