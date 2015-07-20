@@ -1,14 +1,14 @@
 #ifndef DOZERG_HUGE_NUMBER_20150715
 #define DOZERG_HUGE_NUMBER_20150715
 
-#include <cstdint>  //uint_fast64_t
-#include <climits>  //CHAR_BIT
-#include <utility>  //move
+#include <cstdint>      //uint_fast64_t
+#include <climits>      //CHAR_BIT
+#include <utility>      //move
 #include <vector>
 #include <string>
-#include <iostream> //ostream
-#include <sstream>  //ostringstream
-#include <cassert>  //assert
+#include <iostream>     //ostream
+#include <sstream>      //ostringstream
+#include <cassert>      //assert
 #include <algorithm>    //reverse
 #include <type_traits>  //is_integral, is_signed, make_signed_t
 
@@ -35,6 +35,20 @@ static void multWithTwo(std::string & s, int add)
         s.push_back(add);
 }
 
+static int divByTwo(std::string & s, bool & end)
+{
+    int c = 0;
+    for(auto it = s.rbegin();it != s.rend();++it){
+        *it += c * 10;
+        c = (*it & 1);
+        *it /= 2;
+    }
+    const auto p = s.find_last_not_of("0") + 1;
+    end = !p;
+    s.erase(p);
+    return c;
+}
+
 static void reverseAdd(std::string & s, int v)
 {
     for(int i = 0, j = s.size() - 1;i <= j;++i, --j){
@@ -43,6 +57,15 @@ static void reverseAdd(std::string & s, int v)
         if(i < j)
             s[j] = t + v;
     }
+}
+
+static int unhex(char c)
+{
+    if('0' <= c && c <= '9')
+        return (c - '0');
+    if('a' <= c && c <= 'f')
+        return (c - 'a' + 10);
+    return (c - 'A' + 10);
 }
 
 //return:
@@ -185,7 +208,8 @@ public:
     HugeNumber(__Myt && a):data_(std::move(a.data_)){}
     template<typename T>
     explicit HugeNumber(const T & a){fromInteger(a, typename std::is_integral<T>::type());}
-    explicit HugeNumber(const std::string & a){fromString(a);}
+    explicit HugeNumber(const char * a){fromString(a);}
+    explicit HugeNumber(std::string a){fromString(a);}
     __Myt & operator =(const __Myt & a) = default;
     __Myt && operator =(__Myt && a){
         if(&a != this)
@@ -337,7 +361,8 @@ private:
         }else
             data_.clear();
     }
-    void fromString(const std::string & a){ //TODO
+    void fromString(std::string a){
+        const bool s = (!a.empty() && '-' == a[0]);
         switch(checkBase(a)){
             case 2: {
                 data_.clear();
@@ -350,10 +375,23 @@ private:
                 BitOp<__Data> bits(data_);
                 for (auto it = a.rbegin(); it != a.rend() && '+' != *it && '-' != *it; bits.write(3, *it++ - '0'));
                 break; }
-            case 10:
-            case 16:
+            case 10:{
+                data_.clear();
+                if('+' == a[0] || '-' == a[0])
+                    a[0] = '0';
+                reverseAdd(a, -'0');
+                BitOp<__Data> bits(data_);
+                for(bool end = false;!end;bits.write(1, divByTwo(a, end)));
+                break;}
+            case 16:{
+                data_.clear();
+                BitOp<__Data> bits(data_);
+                for (auto it = a.rbegin(); it != a.rend() && 'x' != *it && 'X' != *it; bits.write(4, unhex(*it++)));
+                break; }
             default:throw std::invalid_argument("Input is not a integer number");
         }
+        sign_ = s;
+        shrink();
     }
     void shrink(){
         shrinkTailIf(data_, [](auto v){return (0 == v);});
