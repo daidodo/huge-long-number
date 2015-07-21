@@ -235,8 +235,10 @@ public:
     HugeNumber() = default;
     HugeNumber(const __Myt & a) = default;
     HugeNumber(__Myt && a):data_(std::move(a.data_)){}
-    HugeNumber(const std::string & a) { fromString(a); }
-    HugeNumber(const char * a):HugeNumber(std::string(a)){}
+    explicit HugeNumber(const std::string & a) { fromString(a); }
+    explicit HugeNumber(const char * a):HugeNumber(std::string(a)){}
+    template<size_t N>
+    explicit HugeNumber(const char (&a)[N]):HugeNumber(std::string(a)){}
     template<typename T>
     HugeNumber(const T & a){fromInteger(a, IsIntegerT<T>());}
     __Myt & operator =(const __Myt & a) = default;
@@ -328,8 +330,8 @@ public:
         return *this;
     }
     __Myt & operator +=(const __Myt & a) { addSignData(a.sign_, a.data_); return *this; }
-    //__Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
-    //__Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
+    __Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
+    __Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
     template<typename T>
     __Myt & operator +=(const T & a) { addInteger(a, IsIntegerT<T>()); return *this; }  //TODO
 

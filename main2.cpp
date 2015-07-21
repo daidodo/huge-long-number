@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <random>
+#include <cstring>
 
 using namespace std;
 
@@ -94,10 +95,41 @@ void genArray(T & a, size_t len, const T & b)
 
 void test_ctor_str_base_case(int base, bool upper, string bstr, string head, string body)
 {
+    constexpr int kSize = 200;
     string s(bstr);
     s.push_back(genChar(head));
-    genArray(s, 200, body);
+    genArray(s, kSize, body);
     {
+        char ss[kSize + 16];
+        {
+            strcpy(ss, s.c_str());
+            Int a(s), b(s.c_str()), c(ss), aa, bb, cc;
+            ASSERT_EQ(s, a.toString(base, upper, true));
+            ASSERT_EQ(s, b.toString(base, upper, true));
+            ASSERT_EQ(s, c.toString(base, upper, true));
+            aa = s;
+            //bb = s.c_str();
+            //cc = ss;
+            ASSERT_EQ(s, aa.toString(base, upper, true));
+            ASSERT_EQ(s, bb.toString(base, upper, true));
+            ASSERT_EQ(s, cc.toString(base, upper, true));
+        }{
+            string t('+' + s);
+            strcpy(ss, t.c_str());
+            Int a(t), b(t.c_str()), c(ss);
+            ASSERT_EQ(s, a.toString(base, upper, true));
+            ASSERT_EQ(s, b.toString(base, upper, true));
+            ASSERT_EQ(s, c.toString(base, upper, true));
+        }
+        s.insert(s.begin(), '-');
+        {
+            strcpy(ss, s.c_str());
+            Int a(s), b(s.c_str()), c(ss);
+            ASSERT_EQ(s, a.toString(base, upper, true));
+            ASSERT_EQ(s, b.toString(base, upper, true));
+            ASSERT_EQ(s, c.toString(base, upper, true));
+        }
+        /*
         Int a(s), b('+' + s), aa, bb;
         ASSERT_EQ(s, a.toString(base, upper, true));
         ASSERT_EQ(s, b.toString(base, upper, true));
@@ -111,6 +143,7 @@ void test_ctor_str_base_case(int base, bool upper, string bstr, string head, str
         ASSERT_EQ(s, a.toString(base, upper, true));
         aa = s;
         ASSERT_EQ(s, aa.toString(base, upper, true));
+        */
     }
 }
 
@@ -129,7 +162,7 @@ void test_ctor_str()
 void test_ctor()
 {
     {
-        Int a, b(a), c(move(a));
+        Int a, b(a), c(move(a)), d(static_cast<const Int &&>(a));
         a = b;
         b = move(c);
         //Int aa(true);
@@ -160,7 +193,7 @@ void test_ctor()
 void test_add()
 {
     Int a;
-    //a += "123";
+    a += "123";
     a += 123;
 }
 
