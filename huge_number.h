@@ -10,7 +10,36 @@
 #include <sstream>      //ostringstream
 #include <cassert>      //assert
 #include <algorithm>    //reverse
-#include <type_traits>  //is_integral, is_signed, make_signed_t
+#include <type_traits>  //is_integral, is_signed, make_signed_t, remove_cv_t
+
+#define __IS_INTEGER(type)  \
+template<>  \
+struct __IsInteger<type> : std::true_type{}
+
+template<typename T>
+struct __IsInteger : std::false_type {};
+__IS_INTEGER(char);
+__IS_INTEGER(wchar_t);
+__IS_INTEGER(char16_t);
+__IS_INTEGER(char32_t);
+__IS_INTEGER(signed char);
+__IS_INTEGER(unsigned char);
+__IS_INTEGER(short);
+__IS_INTEGER(unsigned short);
+__IS_INTEGER(int);
+__IS_INTEGER(unsigned int);
+__IS_INTEGER(long);
+__IS_INTEGER(unsigned long);
+__IS_INTEGER(long long);
+__IS_INTEGER(unsigned long long);
+
+#undef __IS_INTEGER
+
+template<typename T>
+struct IsInteger : __IsInteger<std::remove_cv_t<T>> {};
+
+template<typename T>
+using IsIntegerT = typename IsInteger<T>::type;
 
 template<class T, class F>
 static void shrinkTailIf(T & c, F f)
@@ -206,10 +235,10 @@ public:
     HugeNumber() = default;
     HugeNumber(const __Myt & a) = default;
     HugeNumber(__Myt && a):data_(std::move(a.data_)){}
+    HugeNumber(const std::string & a) { fromString(a); }
+    HugeNumber(const char * a):HugeNumber(std::string(a)){}
     template<typename T>
-    explicit HugeNumber(const T & a){fromInteger(a, typename std::is_integral<T>::type());}
-    explicit HugeNumber(const char * a){fromString(a);}
-    explicit HugeNumber(std::string a){fromString(a);}
+    HugeNumber(const T & a){fromInteger(a, IsIntegerT<T>());}
     __Myt & operator =(const __Myt & a) = default;
     __Myt && operator =(__Myt && a){
         if(&a != this)
@@ -218,15 +247,21 @@ public:
     }
     template<typename T>
     __Myt & operator =(const T & a){
-        fromInteger(a, typename std::is_integral<T>::type());
+        fromInteger(a, IsIntegerT<T>());
         return *this;
     }
     __Myt & operator =(const std::string & a){
         fromString(a);
         return *this;
     }
-    __Myt & operator ++();  //TODO
-    __Myt & operator --();  //TODO
+    __Myt & operator ++() {
+        *this += 1;
+        return *this;
+    }
+    __Myt & operator --() {
+        *this -= 1;
+        return *this;
+    }
     __Myt operator ++(int){
         auto t(*this);
         ++*this;
@@ -292,8 +327,18 @@ public:
         shrink();
         return *this;
     }
-    __Myt & operator +=(const __Myt & a){addSignData(a.sign_, a.data_);return *this;}
+    __Myt & operator +=(const __Myt & a) { addSignData(a.sign_, a.data_); return *this; }
+    //__Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
+    //__Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
+    template<typename T>
+    __Myt & operator +=(const T & a) { addInteger(a, IsIntegerT<T>()); return *this; }  //TODO
+
     __Myt & operator -=(const __Myt & a){addSignData(!a.sign_, a.data_);return *this;}
+    __Myt & operator -=(const std::string & a) { return *this; }  //TODO
+    __Myt & operator -=(const char * a) { return (*this -= std::string(a)); }
+    template<typename T>
+    __Myt & operator -=(const T & a) { return *this; }  //TODO
+
     __Myt & operator *=(const __Myt & a);   //TODO
     __Myt & operator /=(const __Myt & a);   //TODO
     __Myt & operator %=(const __Myt & a);   //TODO
@@ -347,8 +392,6 @@ public:
         return oss.str();
     }
 private:
-    explicit HugeNumber(bool) = delete;
-    HugeNumber & operator =(bool) = delete;
     template<typename T>
     void fromInteger(const T & a, std::true_type){
         sign_ = (a < 0);
@@ -362,8 +405,7 @@ private:
         }else
             data_.clear();
     }
-    void fromString(std::string a){
-        const bool s = (!a.empty() && '-' == a[0]);
+    void fromString(const std::string & a){
         switch(checkBase(a)){
             case 2: {
                 data_.clear();
@@ -378,11 +420,12 @@ private:
                 break; }
             case 10:{
                 data_.clear();
-                if('+' == a[0] || '-' == a[0])
-                    a[0] = '0';
-                reverseAdd(a, -'0');
+                std::string t(a);
+                if('+' == t[0] || '-' == t[0])
+                    t[0] = '0';
+                reverseAdd(t, -'0');
                 BitOp<__Data> bits(data_);
-                for(bool end = false;!end;bits.write(1, divByTwo(a, end)));
+                for(bool end = false;!end;bits.write(1, divByTwo(t, end)));
                 break;}
             case 16:{
                 data_.clear();
@@ -391,7 +434,7 @@ private:
                 break; }
             default:throw std::invalid_argument("Input is not a integer number");
         }
-        sign_ = s;
+        sign_ = ('-' == a[0]);
         shrink();
     }
     void shrink(){
@@ -497,7 +540,10 @@ private:
         r.swap(data_);
         shrink();
     }
-
+    template<typename T>
+    void addInteger(const T & a, std::true_type) {
+        //TODO
+    }
     //fields
     __Data data_;
     bool sign_ = false;

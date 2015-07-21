@@ -133,7 +133,7 @@ void test_ctor()
         a = b;
         b = move(c);
         //Int aa(true);
-        //Int aa(1.0);
+        //Int bb(1.0);
         //a = true;
         //a = 1.;
     }
@@ -154,8 +154,14 @@ void test_ctor()
     test_ctor_type<long long>();
     test_ctor_type<unsigned long long>();
     test_ctor_str();
-
     cout<<"test_ctor() SUCC\n";
+}
+
+void test_add()
+{
+    Int a;
+    //a += "123";
+    a += 123;
 }
 
 
