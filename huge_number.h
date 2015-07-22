@@ -16,16 +16,10 @@ typedef uint_fast64_t               __Int;
 typedef std::make_signed_t<__Int>   __SInt;
 
 template<bool B, typename T1, typename T2>
-struct __TypeSelect
-{
-    typedef T2 type;
-};
+struct __TypeSelect { typedef T2 type; };
 
 template<typename T1, typename T2>
-struct __TypeSelect<true, T1, T2>
-{
-    typedef T1 type;
-};
+struct __TypeSelect<true, T1, T2> { typedef T1 type; };
 
 template<typename T>
 struct __SupportType{};
@@ -250,7 +244,7 @@ class HugeNumber
     static constexpr int kEachBits = CHAR_BIT * kEachBytes;
 public:
     //functions
-    HugeNumber() = default;
+    HugeNumber(){}  //Cannot be default for "const HugeNumber a;"
     HugeNumber(const __Myt & a) = default;
     HugeNumber(__Myt && a):data_(std::move(a.data_)), sign_(a.sign_){}
     template<typename T>
@@ -268,6 +262,14 @@ public:
         from(__SupportTypeT<T>(a));
         return *this;
     }
+
+    __Myt operator +(){return *this;}
+    __Myt operator -(){
+        __Myt t(*this);
+        t.negate();
+        return std::move(t);
+    }
+
     __Myt & operator ++() {
         *this += 1;
         return *this;
@@ -284,12 +286,6 @@ public:
     __Myt operator --(int){
         auto t(*this);
         --*this;
-        return std::move(t);
-    }
-    __Myt operator +(){return *this;}
-    __Myt operator -(){
-        __Myt t(*this);
-        t.negate();
         return std::move(t);
     }
     __Myt & operator <<=(int a){
@@ -417,11 +413,7 @@ public:
     template<class T>
     friend bool operator !=(const T & a, const __Myt & b){return (b != a);}
 
-    bool operator <(const __Myt & a) const{
-        if(sign_ != a.sign_)
-            return sign_;
-        return (less(a.data_) ? !sign_ : sign_);
-    }
+    bool operator <(const __Myt & a) const{return less(a.sign_, a.data_);}
     template<typename T>
     bool operator <(const T & a) const{return less(__SupportTypeT<T>(a));}
     template<typename T>
@@ -521,50 +513,77 @@ private:
         if(*this)
             sign_ = !sign_;
     }
+    void add(const __Int & a){ }   //TODO
+    void add(const __SInt & a){a < 0 ? sub(__Int(-a)) : add(__Int(a));}
+    void add(const std::string & a) {*this += __Myt(a);}
     void add(bool s, const __Data & a){
         if(sign_ == s)
             addData(a);
-        else if(less(a)){
+        else if(compare(a) < 0){
             sign_ = s;
             subByData(a);
         }else
             subData(a);
     }
-    void add(const __SInt & a) {}   //TODO
-    void add(const __Int & a) { }   //TODO
-    void add(const std::string & a) {*this += __Myt(a);}
-    void sub(const __SInt & a) {}   //TODO
     void sub(const __Int & a) { }   //TODO
+    void sub(const __SInt & a) {a < 0 ? add(__Int(-a)) : sub(__Int(a));}
     void sub(const std::string & a) {*this -= __Myt(a);}
-    void mul(bool s, const __Data & a){}    //TODO
     void mul(const __SInt & a) {}   //TODO
     void mul(const __Int & a) { }   //TODO
     void mul(const std::string & a) {*this *= __Myt(a);}
-    void div(bool s, const __Data & a){}    //TODO
+    void mul(bool s, const __Data & a){}    //TODO
     void div(const __SInt & a) {}   //TODO
     void div(const __Int & a) { }   //TODO
     void div(const std::string & a) {*this /= __Myt(a);}
-    void mod(bool s, const __Data & a){}    //TODO
+    void div(bool s, const __Data & a){}    //TODO
     void mod(const __SInt & a) {}   //TODO
     void mod(const __Int & a) { }   //TODO
     void mod(const std::string & a) {*this %= __Myt(a);}
-    bool less(const __Data & a) const{
-        if(data_.size() != a.size())
-            return (data_.size() < a.size());
-        for(int i = int(a.size() - 1);i >= 0;--i)
-            if(data_[i] != a[i])
-                return (data_[i] < a[i]);
-        return false;
-    }
+    void mod(bool s, const __Data & a){}    //TODO
     bool equal(const __SInt & a) {return false;}   //TODO
     bool equal(const __Int & a) {return false; }   //TODO
     bool equal(const std::string & a) {return (*this == __Myt(a));}
-    bool less(const __SInt & a) {return false;}   //TODO
-    bool less(const __Int & a) {return false; }   //TODO
-    bool less(const std::string & a) {return (*this < __Myt(a));}
-    bool greater(const __SInt & a) {return false;}   //TODO
-    bool greater(const __Int & a) {return false; }   //TODO
-    bool greater(const std::string & a) {return (*this > __Myt(a));}
+    bool less(const __Int & a) const{return less(false, a);}
+    bool less(const __SInt & a) const{return less((a < 0), __Int(a < 0 ? -a : a));}
+    bool less(const std::string & a) const{return (*this < __Myt(a));}
+    template<class T>
+    bool less(bool s, const T & a) const{
+        if(sign_ != s)
+            return sign_;
+        const int r = compare(a);
+        return (sign_ ? (1 == r) : (-1 == r));
+    }
+    int compare(const __Int & a) const{
+        if(!a)
+            return (data_.empty() ? 0 : 1);
+        if(data_.size() < 1)
+            return -1;
+        else if(data_.size() > 1)
+            return 1;
+        return (data_[0] < a ? -1 : (data_[0] > a ? 1 : 0));
+    }
+    int compare(const __Data & a) const{
+        if(data_.size() < a.size())
+            return -1;
+        else if(data_.size() > a.size())
+            return 1;
+        for(int i = int(a.size() - 1);i >= 0;--i)
+            if(data_[i] < a[i])
+                return -1;
+            else if(data_[i] > a[i])
+                return 1;
+        return 0;
+    }
+    bool greater(const __Int & a) const {return greater(false, a);}
+    bool greater(const __SInt & a) const {return greater((a < 0), (a < 0 ? -a : a));}
+    bool greater(const std::string & a) const {return (*this > __Myt(a));}
+    bool greater(bool s, const __Int & a) const{
+        if(sign_ != s)
+            return !sign_;
+        const int r = compare(a);
+        return (sign_ ? (-1 == r) : (1 == r));
+    }
+
     void shrink(){
         shrinkTailIf(data_, [](auto v){return (0 == v);});
         if(data_.empty() && sign_)

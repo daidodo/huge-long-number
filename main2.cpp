@@ -8,40 +8,49 @@ using namespace std;
 
 typedef HugeNumber Int;
 
-#define ASSERT_EQ(a, b)     assert_eq(a, b, __LINE__, typeid(a))
+#define ASSERT_EQ(a, b)     assert_eq(a, b, __LINE__, __PRETTY_FUNCTION__)
 
-void assert_eq(const string & a, const Int & b, int line, const std::type_info & type)
+void assert_eq(const string & a, const Int & b, int line, const char * func)
 {
     if(a == b.toString())
         return;
     cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << ' ' << b.debugString() << endl
-        << "for " << type.name() << endl;
-    exit(1);
+        << "in " << func << endl;
+    throw 1;
 }
 
-void assert_eq(const string & a, const string & b, int line, const std::type_info & type)
+void assert_eq(const string & a, const string & b, int line, const char * func)
 {
     if(a == b)
         return;
     cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << endl
-        << "for " << type.name() << endl;
-    exit(1);
+        << "in " << func << endl;
+    throw 1;
 }
 
-void assert_eq(const char * a, const Int & b, int line, const std::type_info & type)
+void assert_eq(bool a, bool b, int line, const char * func)
 {
-    assert_eq(string(a), b, line, type);
+    if(a == b)
+        return;
+    cerr << "not equal at line " << line << ":\na=" << boolalpha<< a << "\nb=" << b << endl
+        << "in " << func << endl;
+    throw 1;
+}
+
+void assert_eq(const char * a, const Int & b, int line, const char * func)
+{
+    assert_eq(string(a), b, line, func);
 }
 
 template<typename T>
-void assert_eq(const T & a, const Int & b, int line, const std::type_info & type)
+void assert_eq(const T & a, const Int & b, int line, const char * func)
 {
     ostringstream oss;
     if(sizeof(T) < sizeof(int))
         oss<<static_cast<int>(a);
     else
         oss<<a;
-    assert_eq(oss.str(), b, line, type);
+    assert_eq(oss.str(), b, line, func);
 }
 
 template<typename T>
@@ -170,6 +179,7 @@ void test_ctor()
 {
     {
         Int a, b(a), c(move(a)), d(static_cast<const Int &&>(a));
+        const Int e;
         a = b;
         b = move(c);
         //Int aa(true);
@@ -194,21 +204,138 @@ void test_ctor()
     test_ctor_type<long long>();
     test_ctor_type<unsigned long long>();
     test_ctor_str();
-    cout<<"test_ctor() SUCC\n";
+    cout<<__FUNCTION__<<"() SUCC\n";
 }
 
-void test_add()
+void test_positive()
 {
     Int a;
-    a += "123";
-    a += 123;
+    a = 123;
+    ASSERT_EQ("123", +a);
+    a = 0;
+    ASSERT_EQ("0", +a);
+    a = -0;
+    ASSERT_EQ("0", +a);
+    a = -123;
+    ASSERT_EQ("-123", +a);
+    cout<<__FUNCTION__<<"() SUCC\n";
 }
 
+void test_negate()
+{
+    Int a;
+    a = 123;
+    ASSERT_EQ("-123", -a);
+    a = 0;
+    ASSERT_EQ("0", -a);
+    a = -0;
+    ASSERT_EQ("0", -a);
+    a = -123;
+    ASSERT_EQ("123", -a);
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
 
+template<typename T>
+void test_compare_type()
+{
+    for(int i = -100;i <= 100;++i){
+        const T ma = numeric_limits<T>::max() + i;
+        const T mi = numeric_limits<T>::min() + i;
+        const T z = i;
+        const Int a(ma), b(mi), c(z);
+        for(int j = -10;j <= 10;++j){
+            const T maj(ma + j), mij(mi + j), zj(z + j);
+            ASSERT_EQ(ma < maj, a < maj);
+            ASSERT_EQ(maj < ma, maj < a);
+            ASSERT_EQ(mi < mij, b < mij);
+            ASSERT_EQ(mij < mi, mij < b);
+            ASSERT_EQ(z < zj, c < zj);
+            ASSERT_EQ(zj < z, zj < c);
+
+            ASSERT_EQ(ma > maj, a > maj);
+            ASSERT_EQ(maj > ma, maj > a);
+            ASSERT_EQ(mi > mij, b > mij);
+            ASSERT_EQ(mij > mi, mij > b);
+            ASSERT_EQ(z > zj, c > zj);
+            ASSERT_EQ(zj > z, zj > c);
+        }
+    }
+}
+
+void test_compare_str()
+{
+    constexpr int kSize = 200;
+    char ss[kSize];
+    const char (&css)[sizeof ss] = ss;
+    string s = "0";
+    {
+        strcpy(ss, s.c_str());
+        const Int a(s), b(a + 1), c(a - 1);
+        ASSERT_EQ(false, a < s);
+        ASSERT_EQ(false, s < a);
+        ASSERT_EQ(false, a < s.c_str());
+        ASSERT_EQ(false, s.c_str() < a);
+        ASSERT_EQ(false, a < ss);
+        ASSERT_EQ(false, ss < a);
+        ASSERT_EQ(false, a < css);
+        ASSERT_EQ(false, css < a);
+        //TODO
+    }
+}
+
+void test_compare()
+{
+    {
+        const Int a(-1), b(0), c(1);
+        ASSERT_EQ(false, a < a);
+        ASSERT_EQ(false, b < b);
+        ASSERT_EQ(false, c < c);
+        ASSERT_EQ(true, a < b);
+        ASSERT_EQ(true, b < c);
+        ASSERT_EQ(true, a < c);
+        ASSERT_EQ(false, b < a);
+        ASSERT_EQ(false, c < b);
+        ASSERT_EQ(false, c < a);
+        //a < true;
+        //a < 1.;
+
+        ASSERT_EQ(false, a > a);
+        ASSERT_EQ(false, b > b);
+        ASSERT_EQ(false, c > c);
+        ASSERT_EQ(true, b > a);
+        ASSERT_EQ(true, c > b);
+        ASSERT_EQ(true, c > a);
+        ASSERT_EQ(false, a > b);
+        ASSERT_EQ(false, b > c);
+        ASSERT_EQ(false, b > c);
+        //true > a;
+        //1. > a;
+    }
+    test_compare_type<char>();
+    test_compare_type<wchar_t>();
+    test_compare_type<char16_t>();
+    test_compare_type<char32_t>();
+    test_compare_type<signed char>();
+    test_compare_type<unsigned char>();
+    test_compare_type<short>();
+    test_compare_type<unsigned short>();
+    test_compare_type<int>();
+    test_compare_type<unsigned int>();
+    test_compare_type<long>();
+    test_compare_type<unsigned long>();
+    test_compare_type<long long>();
+    test_compare_type<unsigned long long>();
+    test_compare_str();
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
 
 int main()
 {
     test_ctor();
+    test_positive();
+    test_negate();
+
+    test_compare();
 
     return 0;
 }
