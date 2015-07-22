@@ -111,8 +111,8 @@ void test_ctor_str_base_case(int base, bool upper, string bstr, string head, str
             //bb = s.c_str();
             //cc = ss;
             ASSERT_EQ(s, aa.toString(base, upper, true));
-            ASSERT_EQ(s, bb.toString(base, upper, true));
-            ASSERT_EQ(s, cc.toString(base, upper, true));
+            //ASSERT_EQ(s, bb.toString(base, upper, true));
+            //ASSERT_EQ(s, cc.toString(base, upper, true));
         }{
             string t('+' + s);
             strcpy(ss, t.c_str());

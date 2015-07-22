@@ -12,12 +12,45 @@
 #include <algorithm>    //reverse
 #include <type_traits>  //is_integral, is_signed, make_signed_t, remove_cv_t
 
+struct __StringTag{};
+
+template<typename T>
+struct __SupportType{};
+
+template<>struct __SupportType<std::string>{typedef __StringTag type;};
+template<>struct __SupportType<const char *>{typedef __StringTag type;};
+template<size_t N>struct __SupportType<const char [N]>{typedef __StringTag type;};
+template<size_t N>struct __SupportType<char [N]>{typedef __StringTag type;};
+
+#define __SUPPORT_INTEGER(tp)   template<>struct __SupportType<tp>{typedef typename std::is_signed<tp>::type type;}
+
+__SUPPORT_INTEGER(char);
+__SUPPORT_INTEGER(wchar_t);
+__SUPPORT_INTEGER(char16_t);
+__SUPPORT_INTEGER(char32_t);
+__SUPPORT_INTEGER(signed char);
+__SUPPORT_INTEGER(unsigned char);
+__SUPPORT_INTEGER(short);
+__SUPPORT_INTEGER(unsigned short);
+__SUPPORT_INTEGER(int);
+__SUPPORT_INTEGER(unsigned int);
+__SUPPORT_INTEGER(long);
+__SUPPORT_INTEGER(unsigned long);
+__SUPPORT_INTEGER(long long);
+__SUPPORT_INTEGER(unsigned long long);
+
+template<typename T>
+using __SupportTypeT = typename __SupportType<T>::type;
+
+
+
+template<typename T>
+struct __IsInteger : std::false_type{};
+
 #define __IS_INTEGER(type)  \
 template<>  \
 struct __IsInteger<type> : std::true_type{}
 
-template<typename T>
-struct __IsInteger : std::false_type {};
 __IS_INTEGER(char);
 __IS_INTEGER(wchar_t);
 __IS_INTEGER(char16_t);
@@ -224,9 +257,10 @@ private:
 class HugeNumber
 {
     //types
-    typedef HugeNumber          __Myt;
-    typedef uint_fast64_t       __Int;
-    typedef std::vector<__Int>  __Data;
+    typedef HugeNumber                  __Myt;
+    typedef uint_fast64_t               __Int;
+    typedef std::make_signed_t<__Int>   __SInt;
+    typedef std::vector<__Int>          __Data;
     //constants
     static constexpr int kEachBytes = sizeof(__Int);
     static constexpr int kEachBits = CHAR_BIT * kEachBytes;
@@ -235,12 +269,8 @@ public:
     HugeNumber() = default;
     HugeNumber(const __Myt & a) = default;
     HugeNumber(__Myt && a):data_(std::move(a.data_)){}
-    explicit HugeNumber(const std::string & a) { fromString(a); }
-    explicit HugeNumber(const char * a):HugeNumber(std::string(a)){}
-    template<size_t N>
-    explicit HugeNumber(const char (&a)[N]):HugeNumber(std::string(a)){}
     template<typename T>
-    HugeNumber(const T & a){fromInteger(a, IsIntegerT<T>());}
+    explicit HugeNumber(const T & a){fromValue(a, __SupportTypeT<T>());}
     __Myt & operator =(const __Myt & a) = default;
     __Myt && operator =(__Myt && a){
         if(&a != this)
@@ -249,11 +279,7 @@ public:
     }
     template<typename T>
     __Myt & operator =(const T & a){
-        fromInteger(a, IsIntegerT<T>());
-        return *this;
-    }
-    __Myt & operator =(const std::string & a){
-        fromString(a);
+        fromValue(a, __SupportTypeT<T>());
         return *this;
     }
     __Myt & operator ++() {
@@ -330,10 +356,13 @@ public:
         return *this;
     }
     __Myt & operator +=(const __Myt & a) { addSignData(a.sign_, a.data_); return *this; }
-    __Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
-    __Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
+    //__Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
+    //__Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
     template<typename T>
-    __Myt & operator +=(const T & a) { addInteger(a, IsIntegerT<T>()); return *this; }  //TODO
+    __Myt & operator +=(const T & a) {
+        addValue(a, __SupportTypeT<T>());
+        return *this;
+    }
 
     __Myt & operator -=(const __Myt & a){addSignData(!a.sign_, a.data_);return *this;}
     __Myt & operator -=(const std::string & a) { return *this; }  //TODO
@@ -394,20 +423,19 @@ public:
         return oss.str();
     }
 private:
-    template<typename T>
-    void fromInteger(const T & a, std::true_type){
+    void fromValue(const __SInt & a, std::true_type){
+        data_.clear();
         sign_ = (a < 0);
-        if(a){
-            data_.resize(1);
-            if(std::is_signed<T>::value){
-                std::make_signed_t<__Int> t(a);
-                data_.back() = (sign_ ? -t : t);
-            }else
-                data_.back() = a;
-        }else
-            data_.clear();
+        if(a)
+            data_.push_back(sign_ ? -a : a);
     }
-    void fromString(const std::string & a){
+    void fromValue(const __Int & a, std::false_type){
+        data_.clear();
+        sign_ = false;
+        if(a)
+            data_.push_back(a);
+    }
+    void fromValue(const std::string & a, __StringTag){
         switch(checkBase(a)){
             case 2: {
                 data_.clear();
@@ -542,10 +570,9 @@ private:
         r.swap(data_);
         shrink();
     }
-    template<typename T>
-    void addInteger(const T & a, std::true_type) {
-        //TODO
-    }
+    void addValue(const __SInt & a, std::true_type) {}
+    void addValue(const __Int & a, std::false_type) {}
+    void addValue(const std::string & a, __StringTag) {*this += __Myt(a);}
     //fields
     __Data data_;
     bool sign_ = false;
