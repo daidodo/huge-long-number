@@ -101,49 +101,56 @@ void test_ctor_str_base_case(int base, bool upper, string bstr, string head, str
     genArray(s, kSize, body);
     {
         char ss[kSize + 16];
+        const char (&css)[sizeof ss] = ss;
         {
             strcpy(ss, s.c_str());
-            Int a(s), b(s.c_str()), c(ss), aa, bb, cc;
+            Int a(s), b(s.c_str()), c(ss), d(css), aa, bb, cc, dd;
             ASSERT_EQ(s, a.toString(base, upper, true));
             ASSERT_EQ(s, b.toString(base, upper, true));
             ASSERT_EQ(s, c.toString(base, upper, true));
+            ASSERT_EQ(s, d.toString(base, upper, true));
             aa = s;
-            //bb = s.c_str();
-            //cc = ss;
+            bb = s.c_str();
+            cc = ss;
+            dd = css;
             ASSERT_EQ(s, aa.toString(base, upper, true));
-            //ASSERT_EQ(s, bb.toString(base, upper, true));
-            //ASSERT_EQ(s, cc.toString(base, upper, true));
+            ASSERT_EQ(s, bb.toString(base, upper, true));
+            ASSERT_EQ(s, cc.toString(base, upper, true));
+            ASSERT_EQ(s, dd.toString(base, upper, true));
         }{
             string t('+' + s);
             strcpy(ss, t.c_str());
-            Int a(t), b(t.c_str()), c(ss);
+            Int a(s), b(s.c_str()), c(ss), d(css), aa, bb, cc, dd;
             ASSERT_EQ(s, a.toString(base, upper, true));
             ASSERT_EQ(s, b.toString(base, upper, true));
             ASSERT_EQ(s, c.toString(base, upper, true));
+            ASSERT_EQ(s, d.toString(base, upper, true));
+            aa = s;
+            bb = s.c_str();
+            cc = ss;
+            dd = css;
+            ASSERT_EQ(s, aa.toString(base, upper, true));
+            ASSERT_EQ(s, bb.toString(base, upper, true));
+            ASSERT_EQ(s, cc.toString(base, upper, true));
+            ASSERT_EQ(s, dd.toString(base, upper, true));
         }
         s.insert(s.begin(), '-');
         {
             strcpy(ss, s.c_str());
-            Int a(s), b(s.c_str()), c(ss);
+            Int a(s), b(s.c_str()), c(ss), d(css), aa, bb, cc, dd;
             ASSERT_EQ(s, a.toString(base, upper, true));
             ASSERT_EQ(s, b.toString(base, upper, true));
             ASSERT_EQ(s, c.toString(base, upper, true));
+            ASSERT_EQ(s, d.toString(base, upper, true));
+            aa = s;
+            bb = s.c_str();
+            cc = ss;
+            dd = css;
+            ASSERT_EQ(s, aa.toString(base, upper, true));
+            ASSERT_EQ(s, bb.toString(base, upper, true));
+            ASSERT_EQ(s, cc.toString(base, upper, true));
+            ASSERT_EQ(s, dd.toString(base, upper, true));
         }
-        /*
-        Int a(s), b('+' + s), aa, bb;
-        ASSERT_EQ(s, a.toString(base, upper, true));
-        ASSERT_EQ(s, b.toString(base, upper, true));
-        aa = s;
-        bb = '+' + s;
-        ASSERT_EQ(s, aa.toString(base, upper, true));
-        ASSERT_EQ(s, bb.toString(base, upper, true));
-    }{
-        s = '-' + s;
-        Int a(s), aa;
-        ASSERT_EQ(s, a.toString(base, upper, true));
-        aa = s;
-        ASSERT_EQ(s, aa.toString(base, upper, true));
-        */
     }
 }
 

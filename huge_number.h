@@ -12,17 +12,33 @@
 #include <algorithm>    //reverse
 #include <type_traits>  //is_integral, is_signed, make_signed_t, remove_cv_t
 
-struct __StringTag{};
+typedef uint_fast64_t               __Int;
+typedef std::make_signed_t<__Int>   __SInt;
+
+template<bool B, typename T1, typename T2>
+struct __TypeSelect
+{
+    typedef T2 type;
+};
+
+template<typename T1, typename T2>
+struct __TypeSelect<true, T1, T2>
+{
+    typedef T1 type;
+};
 
 template<typename T>
 struct __SupportType{};
 
-template<>struct __SupportType<std::string>{typedef __StringTag type;};
-template<>struct __SupportType<const char *>{typedef __StringTag type;};
-template<size_t N>struct __SupportType<const char [N]>{typedef __StringTag type;};
-template<size_t N>struct __SupportType<char [N]>{typedef __StringTag type;};
+template<>struct __SupportType<std::string>{typedef const std::string & type;};
+template<>struct __SupportType<const char *>{typedef const std::string & type;};
+//template<size_t N>struct __SupportType<const char [N]>{typedef const std::string & type;};
+template<size_t N>struct __SupportType<char [N]>{typedef const std::string & type;};
 
-#define __SUPPORT_INTEGER(tp)   template<>struct __SupportType<tp>{typedef typename std::is_signed<tp>::type type;}
+#define __SUPPORT_INTEGER(tp)   \
+    template<>struct __SupportType<tp>{ \
+        typedef const typename __TypeSelect<std::is_signed<tp>::value, __SInt, __Int>::type & type; \
+    }
 
 __SUPPORT_INTEGER(char);
 __SUPPORT_INTEGER(wchar_t);
@@ -39,40 +55,10 @@ __SUPPORT_INTEGER(unsigned long);
 __SUPPORT_INTEGER(long long);
 __SUPPORT_INTEGER(unsigned long long);
 
+#undef __SUPPORT_INTEGER
+
 template<typename T>
 using __SupportTypeT = typename __SupportType<T>::type;
-
-
-
-template<typename T>
-struct __IsInteger : std::false_type{};
-
-#define __IS_INTEGER(type)  \
-template<>  \
-struct __IsInteger<type> : std::true_type{}
-
-__IS_INTEGER(char);
-__IS_INTEGER(wchar_t);
-__IS_INTEGER(char16_t);
-__IS_INTEGER(char32_t);
-__IS_INTEGER(signed char);
-__IS_INTEGER(unsigned char);
-__IS_INTEGER(short);
-__IS_INTEGER(unsigned short);
-__IS_INTEGER(int);
-__IS_INTEGER(unsigned int);
-__IS_INTEGER(long);
-__IS_INTEGER(unsigned long);
-__IS_INTEGER(long long);
-__IS_INTEGER(unsigned long long);
-
-#undef __IS_INTEGER
-
-template<typename T>
-struct IsInteger : __IsInteger<std::remove_cv_t<T>> {};
-
-template<typename T>
-using IsIntegerT = typename IsInteger<T>::type;
 
 template<class T, class F>
 static void shrinkTailIf(T & c, F f)
@@ -258,8 +244,6 @@ class HugeNumber
 {
     //types
     typedef HugeNumber                  __Myt;
-    typedef uint_fast64_t               __Int;
-    typedef std::make_signed_t<__Int>   __SInt;
     typedef std::vector<__Int>          __Data;
     //constants
     static constexpr int kEachBytes = sizeof(__Int);
@@ -268,18 +252,20 @@ public:
     //functions
     HugeNumber() = default;
     HugeNumber(const __Myt & a) = default;
-    HugeNumber(__Myt && a):data_(std::move(a.data_)){}
+    HugeNumber(__Myt && a):data_(std::move(a.data_)), sign_(a.sign_){}
     template<typename T>
-    explicit HugeNumber(const T & a){fromValue(a, __SupportTypeT<T>());}
+    explicit HugeNumber(const T & a){from(__SupportTypeT<T>(a));}
     __Myt & operator =(const __Myt & a) = default;
     __Myt && operator =(__Myt && a){
-        if(&a != this)
+        if(&a != this){
             data_ = std::move(a.data_);
+            sign_ = a.sign_;
+        }
         return std::move(*this);
     }
     template<typename T>
     __Myt & operator =(const T & a){
-        fromValue(a, __SupportTypeT<T>());
+        from(__SupportTypeT<T>(a));
         return *this;
     }
     __Myt & operator ++() {
@@ -303,7 +289,7 @@ public:
     __Myt operator +(){return *this;}
     __Myt operator -(){
         __Myt t(*this);
-        t.sign_ = !sign_;
+        t.negate();
         return std::move(t);
     }
     __Myt & operator <<=(int a){
@@ -355,51 +341,115 @@ public:
         shrink();
         return *this;
     }
-    __Myt & operator +=(const __Myt & a) { addSignData(a.sign_, a.data_); return *this; }
-    //__Myt & operator +=(const std::string & a) { return (*this += __Myt(a)); }
-    //__Myt & operator +=(const char * a) { return (*this += __Myt(a)); }
+    __Myt & operator +=(const __Myt & a) { add(a.sign_, a.data_); return *this; }
     template<typename T>
     __Myt & operator +=(const T & a) {
-        addValue(a, __SupportTypeT<T>());
+        add(__SupportTypeT<T>(a));
         return *this;
     }
-
-    __Myt & operator -=(const __Myt & a){addSignData(!a.sign_, a.data_);return *this;}
-    __Myt & operator -=(const std::string & a) { return *this; }  //TODO
-    __Myt & operator -=(const char * a) { return (*this -= std::string(a)); }
+    __Myt & operator -=(const __Myt & a){add(!a.sign_, a.data_);return *this;}
     template<typename T>
-    __Myt & operator -=(const T & a) { return *this; }  //TODO
-
-    __Myt & operator *=(const __Myt & a);   //TODO
-    __Myt & operator /=(const __Myt & a);   //TODO
-    __Myt & operator %=(const __Myt & a);   //TODO
+    __Myt & operator -=(const T & a) {
+        sub(__SupportTypeT<T>(a));
+        return *this;
+    }
+    __Myt & operator *=(const __Myt & a){mul(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator *=(const T & a) {
+        mul(__SupportTypeT<T>(a));
+        return *this;
+    }
+    __Myt & operator /=(const __Myt & a){div(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator /=(const T & a) {
+        div(__SupportTypeT<T>(a));
+        return *this;
+    }
+    __Myt & operator %=(const __Myt & a){mod(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator %=(const T & a) {
+        mod(__SupportTypeT<T>(a));
+        return *this;
+    }
     __Myt operator <<(int a) const{return __Myt(*this).operator <<=(a);}
     __Myt operator >>(int a) const{return __Myt(*this).operator >>=(a);}
-    __Myt operator +(const __Myt & a) const{return __Myt(*this).operator +=(a);}
-    __Myt operator -(const __Myt & a) const{return __Myt(*this).operator -=(a);}
-    __Myt operator *(const __Myt & a) const{return __Myt(*this).operator *=(a);}
-    __Myt operator /(const __Myt & a) const{return __Myt(*this).operator /=(a);}
-    __Myt operator %(const __Myt & a) const{return __Myt(*this).operator %=(a);}
+
+    template<class T>
+    __Myt operator +(const T & a) const{return (__Myt(*this) +=a);}
+    template<class T>
+    friend __Myt operator +(const T & a, const __Myt & b){return (b + a);}
+
+    template<class T>
+    __Myt operator -(const T & a) const{return (__Myt(*this) -= a);}
+    template<class T>
+    friend __Myt operator -(const T & a, const __Myt & b){
+        auto t(b - a);
+        t.negate();
+        return std::move(t);
+    }
+
+    template<class T>
+    __Myt operator *(const T & a) const{return (__Myt(*this) *= a);}
+    template<class T>
+    friend __Myt operator *(const T & a, const __Myt & b){return (b * a);}
+
+    template<class T>
+    __Myt operator /(const T & a) const{return (__Myt(*this) /= a);}
+    template<class T>
+    friend __Myt operator /(const T & a, const __Myt & b){return (__Myt(a) /= b);}
+
+    template<class T>
+    __Myt operator %(const T & a) const{return (__Myt(*this) %= a);}
+    template<class T>
+    friend __Myt operator %(const T & a, const __Myt & b){return (__Myt(a) %= b);}
+
     explicit operator bool() const{return !operator !();}
     bool operator !() const{return data_.empty();}
+
     bool operator ==(const __Myt & a) const{return (sign_ == a.sign_ && data_ == a.data_);}
-    bool operator !=(const __Myt & a) const{return !operator ==(a);}
+    template<typename T>
+    bool operator ==(const T & a) const{return equal(__SupportTypeT<T>(a));}
+    template<typename T>
+    friend bool operator ==(const T & a, const __Myt & b){return (b == a);}
+
+    template<class T>
+    bool operator !=(const T & a) const{return !(*this == a);}
+    template<class T>
+    friend bool operator !=(const T & a, const __Myt & b){return (b != a);}
+
     bool operator <(const __Myt & a) const{
         if(sign_ != a.sign_)
             return sign_;
-        return (compareData(a.data_) ? !sign_ : sign_);
+        return (less(a.data_) ? !sign_ : sign_);
     }
-    bool operator >(const __Myt & a) const{return a.operator <(*this);}
-    bool operator <=(const __Myt & a) const{return !a.operator <(*this);}
-    bool operator >=(const __Myt & a) const{return !operator <(a);}
+    template<typename T>
+    bool operator <(const T & a) const{return less(__SupportTypeT<T>(a));}
+    template<typename T>
+    friend bool operator <(const T & a, const __Myt & b){return (b > a);}
+
+    bool operator >(const __Myt & a) const{return (a < *this);}
+    template<typename T>
+    bool operator >(const T & a) const{return greater(__SupportTypeT<T>(a));}
+    template<typename T>
+    friend bool operator >(const T & a, const __Myt & b){return (b < a);}
+
+    template<class T>
+    bool operator <=(const T & a) const{return !(a < *this);}
+    template<typename T>
+    friend bool operator <=(const T & a, const __Myt & b){return !(b < a);}
+
+    template<class T>
+    bool operator >=(const T & a) const{return !(*this < a);}
+    template<typename T>
+    friend bool operator >=(const T & a, const __Myt & b){return !(a < b);}
 
     std::string toString(int base = 10, bool uppercase = false, bool showbase = false) const{
         const char * const kDigits = (uppercase ? "0123456789ABCDEF" : "0123456789abcdef");
         switch(base){
-            case 16:return bitsToString<4>(kDigits, (showbase ? (uppercase ? "X0" : "x0") : nullptr));
-            case 10:return tenToString();
-            case 8:return bitsToString<3>(kDigits, (showbase ? "0" : nullptr));
-            case 2:return bitsToString<1>(kDigits, (showbase ? (uppercase ? "B0" : "b0") : nullptr));
+            case 16:return toStringX<4>(kDigits, (showbase ? (uppercase ? "X0" : "x0") : nullptr));
+            case 10:return toString10();
+            case 8:return toStringX<3>(kDigits, (showbase ? "0" : nullptr));
+            case 2:return toStringX<1>(kDigits, (showbase ? (uppercase ? "B0" : "b0") : nullptr));
             default:;
         }
         assert(false && "Unsupported base");
@@ -416,26 +466,26 @@ public:
     //debug only
     std::string debugString() const{
         std::ostringstream oss;
-        oss<<'{'<<std::boolalpha<<sign_<<' ';
+        oss<<'{'<<(sign_ ? '-' : '+')<<' ';
         for(auto v : data_)
             oss<<std::hex<<v<<' ';
         oss<<'}';
         return oss.str();
     }
 private:
-    void fromValue(const __SInt & a, std::true_type){
+    void from(const __SInt & a){
         data_.clear();
         sign_ = (a < 0);
         if(a)
             data_.push_back(sign_ ? -a : a);
     }
-    void fromValue(const __Int & a, std::false_type){
+    void from(const __Int & a){
         data_.clear();
         sign_ = false;
         if(a)
             data_.push_back(a);
     }
-    void fromValue(const std::string & a, __StringTag){
+    void from(const std::string & a){
         switch(checkBase(a)){
             case 2: {
                 data_.clear();
@@ -467,13 +517,61 @@ private:
         sign_ = ('-' == a[0]);
         shrink();
     }
+    void negate(){
+        if(*this)
+            sign_ = !sign_;
+    }
+    void add(bool s, const __Data & a){
+        if(sign_ == s)
+            addData(a);
+        else if(less(a)){
+            sign_ = s;
+            subByData(a);
+        }else
+            subData(a);
+    }
+    void add(const __SInt & a) {}   //TODO
+    void add(const __Int & a) { }   //TODO
+    void add(const std::string & a) {*this += __Myt(a);}
+    void sub(const __SInt & a) {}   //TODO
+    void sub(const __Int & a) { }   //TODO
+    void sub(const std::string & a) {*this -= __Myt(a);}
+    void mul(bool s, const __Data & a){}    //TODO
+    void mul(const __SInt & a) {}   //TODO
+    void mul(const __Int & a) { }   //TODO
+    void mul(const std::string & a) {*this *= __Myt(a);}
+    void div(bool s, const __Data & a){}    //TODO
+    void div(const __SInt & a) {}   //TODO
+    void div(const __Int & a) { }   //TODO
+    void div(const std::string & a) {*this /= __Myt(a);}
+    void mod(bool s, const __Data & a){}    //TODO
+    void mod(const __SInt & a) {}   //TODO
+    void mod(const __Int & a) { }   //TODO
+    void mod(const std::string & a) {*this %= __Myt(a);}
+    bool less(const __Data & a) const{
+        if(data_.size() != a.size())
+            return (data_.size() < a.size());
+        for(int i = int(a.size() - 1);i >= 0;--i)
+            if(data_[i] != a[i])
+                return (data_[i] < a[i]);
+        return false;
+    }
+    bool equal(const __SInt & a) {return false;}   //TODO
+    bool equal(const __Int & a) {return false; }   //TODO
+    bool equal(const std::string & a) {return (*this == __Myt(a));}
+    bool less(const __SInt & a) {return false;}   //TODO
+    bool less(const __Int & a) {return false; }   //TODO
+    bool less(const std::string & a) {return (*this < __Myt(a));}
+    bool greater(const __SInt & a) {return false;}   //TODO
+    bool greater(const __Int & a) {return false; }   //TODO
+    bool greater(const std::string & a) {return (*this > __Myt(a));}
     void shrink(){
         shrinkTailIf(data_, [](auto v){return (0 == v);});
         if(data_.empty() && sign_)
             sign_ = false;
     }
     template<int N>
-    std::string bitsToString(const char * digits, const char * base) const{
+    std::string toStringX(const char * digits, const char * base) const{
         static_assert(N > 0, "N is less than 1");
         std::string ret;
         if(data_.empty())
@@ -492,7 +590,7 @@ private:
         std::reverse(ret.begin(), ret.end());
         return std::move(ret);
     }
-    std::string tenToString() const{
+    std::string toString10() const{
         std::string ret;
         BitOp<const __Data> bits(data_);
         bits.seekEnd();
@@ -504,23 +602,11 @@ private:
         reverseAdd(ret, '0');
         return std::move(ret);
     }
-    bool compareData(const __Data & a) const{
-        if(data_.size() != a.size())
-            return (data_.size() < a.size());
-        for(int i = int(a.size() - 1);i >= 0;--i)
-            if(data_[i] != a[i])
-                return (data_[i] < a[i]);
-        return false;
-    }
-    void addSignData(bool s, const __Data & a){
-        if(sign_ == s)
-            addData(a);
-        else if(compareData(a)){
-            sign_ = s;
-            subByData(a);
-        }else
-            subData(a);
-    }
+
+
+
+
+
     void addData(const __Data & a){
         if(a.empty())
             return;
@@ -570,9 +656,6 @@ private:
         r.swap(data_);
         shrink();
     }
-    void addValue(const __SInt & a, std::true_type) {}
-    void addValue(const __Int & a, std::false_type) {}
-    void addValue(const std::string & a, __StringTag) {*this += __Myt(a);}
     //fields
     __Data data_;
     bool sign_ = false;
