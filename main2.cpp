@@ -14,16 +14,7 @@ typedef HugeNumber Int;
 
 #define ASSERT_EQ(a, b)     assert_eq(a, b, __LINE__, __PRETTY_FUNCTION__)
 
-void assert_eq(const string & a, const Int & b, int line, const char * func)
-{
-    if(a == b.toString())
-        return;
-    cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << ' ' << b.debugString() << endl
-        << "in " << func << endl;
-    throw 1;
-}
-
-void assert_eq(const string & a, const string & b, int line, const char * func)
+void assert_eq(string a, string b, int line, const char * func)
 {
     if(a == b)
         return;
@@ -37,6 +28,24 @@ void assert_eq(bool a, bool b, int line, const char * func)
     if(a == b)
         return;
     cerr << "not equal at line " << line << ":\na=" << boolalpha<< a << "\nb=" << b << endl
+        << "in " << func << endl;
+    throw 1;
+}
+
+void assert_eq(string a, const Int & b, int line, const char * func)
+{
+    if(a == b.toString())
+        return;
+    cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << ' ' << b.debugString() << endl
+        << "in " << func << endl;
+    throw 1;
+}
+
+void assert_eq(const Int & a, const Int & b, int line, const char * func)
+{
+    if(a == b)
+        return;
+    cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << endl
         << "in " << func << endl;
     throw 1;
 }
@@ -55,26 +64,6 @@ void assert_eq(const T & a, const Int & b, int line, const char * func)
     else
         oss<<a;
     assert_eq(oss.str(), b, line, func);
-}
-
-template<typename T>
-void test_ctor_type()
-{
-    for(int i = -100;i <= 100;++i){
-        const T ma = numeric_limits<T>::max() + i;
-        const T mi = numeric_limits<T>::min() + i;
-        const T z = i;
-        Int a(ma), b(mi), c(z), aa, bb, cc;
-        ASSERT_EQ(ma, a);
-        ASSERT_EQ(mi, b);
-        ASSERT_EQ(z, c);
-        aa = ma;
-        bb = mi;
-        cc = z;
-        ASSERT_EQ(ma, aa);
-        ASSERT_EQ(mi, bb);
-        ASSERT_EQ(z, cc);
-    }
 }
 
 static default_random_engine gen;
@@ -104,6 +93,32 @@ void genArray(T & a, size_t len, const T & b)
     assert(!b.empty());
     uniform_int_distribution<decltype(b.size())> u(0, b.size() - 1);
     for(size_t i = 0;i < len;++i, a.push_back(b[u(gen)]));
+}
+
+template<typename T>
+void test_ctor_type()
+{
+    for(int i = -100;i <= 100;++i){
+        const T ma = numeric_limits<T>::max() + i;
+        const T mi = numeric_limits<T>::min() + i;
+        const T z = i;
+        Int a(ma), b(mi), c(z), aa, bb, cc;
+        ASSERT_EQ(ma, a);
+        ASSERT_EQ(mi, b);
+        ASSERT_EQ(z, c);
+        aa = ma;
+        bb = mi;
+        cc = z;
+        ASSERT_EQ(ma, aa);
+        ASSERT_EQ(mi, bb);
+        ASSERT_EQ(z, cc);
+        aa = aa;
+        bb = bb;
+        cc = cc;
+        ASSERT_EQ(ma, aa);
+        ASSERT_EQ(mi, bb);
+        ASSERT_EQ(z, cc);
+    }
 }
 
 void test_ctor_str_base_case(int base, bool upper, string bstr, string head, string body)
@@ -167,6 +182,12 @@ void test_ctor_str_base_case(int base, bool upper, string bstr, string head, str
     }
 }
 
+template<class T>
+void test_ctor_others(T s)
+{
+    const Int a(s);
+}
+
 void test_ctor_str()
 {
     test_ctor_str_base_case(2, false, "0b", "1", "01");
@@ -177,6 +198,14 @@ void test_ctor_str()
     test_ctor_str_base_case(10, true, "", "123456789", "0123456789");
     test_ctor_str_base_case(16, false, "0x", "123456789abcdef", "0123456789abcdef");
     test_ctor_str_base_case(16, true, "0X", "123456789ABCDEF", "0123456789ABCDEF");
+    {
+        char s[124];
+        strcpy(s, "124");
+        const char ss[123] = "123";
+        const Int a(s), b(ss), c("123");
+        test_ctor_others(s);    //Strange!!
+        test_ctor_others(ss);
+    }
 }
 
 void test_ctor()
@@ -272,19 +301,25 @@ void test_compare_type()
             __TEST_COMP(comp(mi, mij), b, mij);
             __TEST_COMP(comp(z, zj), c, zj);
         }
+        __TEST_COMP(0, a, a);
+        __TEST_COMP(0, b, b);
+        __TEST_COMP(0, c, c);
     }
 }
 
-void test_compare_str_type(int cp, const Int & a, const string & s)
+void test_compare_str_type(int cp, const Int & a, string s)
 {
     constexpr int kSize = 200;
     char ss[kSize];
     const char (&css)[sizeof ss] = ss;
     strcpy(ss, s.c_str());
+    const Int b(s);
     __TEST_COMP(cp, a, s);
     __TEST_COMP(cp, a, s.c_str());
     __TEST_COMP(cp, a, ss);
     __TEST_COMP(cp, a, css);
+    __TEST_COMP(cp, a, b);
+    __TEST_COMP(0, a, a);
 }
 
 void test_compare_str()
@@ -320,17 +355,8 @@ void test_compare_str()
 
 void test_compare()
 {
-    {
-        const Int a(-1), b(0), c(1);
-        __TEST_COMP(0, a, a);
-        __TEST_COMP(0, b, b);
-        __TEST_COMP(0, c, c);
-        __TEST_COMP(-1, a, b);
-        __TEST_COMP(-1, b, c);
-        __TEST_COMP(-1, a, c);
-        //__TEST_COMP(-1, b, true);
-        //__TEST_COMP(-1, b, 1.);
-    }
+    //__TEST_COMP(-1, Int(), true);
+    //__TEST_COMP(-1, Int(), 1.);
     test_compare_type<char>();
     test_compare_type<wchar_t>();
     test_compare_type<char16_t>();
@@ -366,7 +392,144 @@ void test_bool()
     ASSERT_EQ(false, !d);
     ASSERT_EQ(true, (e ? true : false));
     ASSERT_EQ(false, !e);
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
 
+void test_incr_decr_exp(string s, string ss)
+{
+    Int a(s), b(s);
+    ASSERT_EQ(ss, ++a);
+    ASSERT_EQ(s, b++);
+    ASSERT_EQ(ss, b);
+    ASSERT_EQ(s, --a);
+    ASSERT_EQ(ss, b--);
+    ASSERT_EQ(s, b);
+}
+
+void test_incr_decr()
+{
+    test_incr_decr_exp("-14910398570183471326419783246138", "-14910398570183471326419783246137");
+    test_incr_decr_exp("-18446744073709551616", "-18446744073709551615");
+    test_incr_decr_exp("-18446744073709551615", "-18446744073709551614");
+    test_incr_decr_exp("-9223372036854775809", "-9223372036854775808");
+    test_incr_decr_exp("-9223372036854775808", "-9223372036854775807");
+    test_incr_decr_exp("-123", "-122");
+    test_incr_decr_exp("-1", "0");
+    test_incr_decr_exp("0", "1");
+    test_incr_decr_exp("123", "124");
+    test_incr_decr_exp("9223372036854775806", "9223372036854775807");
+    test_incr_decr_exp("9223372036854775807", "9223372036854775808");
+    test_incr_decr_exp("18446744073709551614", "18446744073709551615");
+    test_incr_decr_exp("18446744073709551615", "18446744073709551616");
+    test_incr_decr_exp("14910398570183471326419783246138", "14910398570183471326419783246139");
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
+
+#define __TEST_ADD_SUB(s1, s2, ss)  do{ \
+    const Int a(s1), b(s2), c(ss);  \
+    ASSERT_EQ(c, Int(s1) += b);     \
+    ASSERT_EQ(c, Int(s1) += s2);    \
+    ASSERT_EQ(c, Int(s2) += a);     \
+    ASSERT_EQ(c, Int(s2) += s1);    \
+    ASSERT_EQ(a, Int(ss) -= b);     \
+    ASSERT_EQ(a, Int(ss) -= s2);    \
+    ASSERT_EQ(b, Int(ss) -= a);     \
+    ASSERT_EQ(b, Int(ss) -= s1);    \
+    ASSERT_EQ(c, a + b);            \
+    ASSERT_EQ(c, a + (s2));         \
+    ASSERT_EQ(c, (s1) + b);         \
+    ASSERT_EQ(a, c - b);            \
+    ASSERT_EQ(a, c - (s2));         \
+    ASSERT_EQ(a, (ss) - b);         \
+    ASSERT_EQ(b, c - a);            \
+    ASSERT_EQ(b, c - (s1));         \
+    ASSERT_EQ(b, (ss) - a);         \
+}while(0)
+
+#define __TEST_ADD_SUB2(s, ss)  do{ \
+    const Int a(s), b(ss);  \
+    Int v(s);               \
+    ASSERT_EQ(b, v += v);   \
+    ASSERT_EQ("0", v -= v); \
+    ASSERT_EQ(b, a + a);    \
+    ASSERT_EQ("0", a - a);  \
+}while(0)
+
+template<typename T>
+void test_add_sub_type()
+{
+    const T ma = numeric_limits<T>::max();
+    const T mi = numeric_limits<T>::min();
+    const T z = 0;
+    for(T i = 0;i <= 10;++i){
+        __TEST_ADD_SUB(ma - i, i, ma);
+        __TEST_ADD_SUB(mi, i, mi + i);
+        __TEST_ADD_SUB(z, i, i);
+        __TEST_ADD_SUB2(z, z);
+        __TEST_ADD_SUB2(i, 2 * i);
+        if(mi < 0){
+            __TEST_ADD_SUB(-i, i, z);
+            __TEST_ADD_SUB2(-i, -2 * i);
+        }
+    }
+}
+
+void test_add_sub_str_exp(string s, string ss)
+{
+    constexpr int kSize = 200;
+    char cs[kSize], css[kSize];
+    const char (&ccs)[kSize] = cs;
+    const char (&ccss)[kSize] = css;
+    strcpy(cs, s.c_str());
+    strcpy(css, ss.c_str());
+    __TEST_ADD_SUB2(s, ss);
+    __TEST_ADD_SUB2(cs, css);
+    __TEST_ADD_SUB2(ccs, ccss);
+}
+
+void test_add_sub_str_exp(string s1, string s2, string ss)
+{
+    constexpr int kSize = 200;
+    char cs1[kSize], cs2[kSize], css[kSize];
+    const char (&ccs1)[kSize] = cs1;
+    const char (&ccs2)[kSize] = cs2;
+    const char (&ccss)[kSize] = css;
+    strcpy(cs1, s1.c_str());
+    strcpy(cs2, s2.c_str());
+    strcpy(css, ss.c_str());
+    __TEST_ADD_SUB(s1, s2, ss);
+    __TEST_ADD_SUB(cs1, cs2, css);
+    __TEST_ADD_SUB(ccs1, ccs2, ccss);
+}
+
+#undef __TEST_ADD_SUB
+#undef __TEST_ADD_SUB2
+
+void test_add_sub_str()
+{
+    test_add_sub_str_exp("-123", "-246");
+    test_add_sub_str_exp("0", "0");
+    test_add_sub_str_exp("0", "0", "0");
+
+}
+
+void test_add_sub()
+{
+    test_add_sub_type<char>();
+    test_add_sub_type<wchar_t>();
+    test_add_sub_type<char16_t>();
+    test_add_sub_type<char32_t>();
+    test_add_sub_type<signed char>();
+    test_add_sub_type<unsigned char>();
+    test_add_sub_type<short>();
+    test_add_sub_type<unsigned short>();
+    test_add_sub_type<int>();
+    test_add_sub_type<unsigned int>();
+    test_add_sub_type<long>();
+    test_add_sub_type<unsigned long>();
+    test_add_sub_type<long long>();
+    test_add_sub_type<unsigned long long>();
+    test_add_sub_str();
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
@@ -376,6 +539,8 @@ int main()
     test_sign();
     test_compare();
     test_bool();
+    test_incr_decr();
+    test_add_sub();
 
     return 0;
 }

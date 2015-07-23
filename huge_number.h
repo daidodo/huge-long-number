@@ -26,6 +26,7 @@ struct __SupportType{};
 
 template<>struct __SupportType<std::string>{typedef const std::string & type;};
 template<>struct __SupportType<const char *>{typedef const std::string & type;};
+template<>struct __SupportType<char *>{typedef const std::string & type;};
 //template<size_t N>struct __SupportType<const char [N]>{typedef const std::string & type;};
 template<size_t N>struct __SupportType<char [N]>{typedef const std::string & type;};
 
@@ -292,6 +293,75 @@ public:
         --*this;
         return std::move(t);
     }
+    //a += b;
+    __Myt & operator +=(const __Myt & a) { add(a.sign_, a.data_); return *this; }
+    template<typename T>
+    __Myt & operator +=(const T & a) {
+        add(__SupportTypeT<T>(a));
+        return *this;
+    }
+    //a -= b;
+    __Myt & operator -=(const __Myt & a){add(!a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator -=(const T & a) {
+        sub(__SupportTypeT<T>(a));
+        return *this;
+    }
+    //a *= b;
+    __Myt & operator *=(const __Myt & a){mul(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator *=(const T & a) {
+        mul(__SupportTypeT<T>(a));
+        return *this;
+    }
+    //a /= b;
+    __Myt & operator /=(const __Myt & a){div(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator /=(const T & a) {
+        div(__SupportTypeT<T>(a));
+        return *this;
+    }
+    //a %= b;
+    __Myt & operator %=(const __Myt & a){mod(a.sign_, a.data_);return *this;}
+    template<typename T>
+    __Myt & operator %=(const T & a) {
+        mod(__SupportTypeT<T>(a));
+        return *this;
+    }
+    //a << 3; a >> 3;
+    __Myt operator <<(int a) const{return (__Myt(*this) <<= a);}
+    __Myt operator >>(int a) const{return (__Myt(*this) >>= a);}
+    //a + b;
+    __Myt operator +(const __Myt & a) const{return (__Myt(*this) += a);}
+    template<class T>
+    __Myt operator +(const T & a) const{return (__Myt(*this) += a);}
+    template<class T>
+    friend __Myt operator +(const T & a, const __Myt & b){return (b + a);}
+    //a - b;
+    __Myt operator -(const __Myt & a) const{return (__Myt(*this) -= a);}
+    template<class T>
+    __Myt operator -(const T & a) const{return (__Myt(*this) -= a);}
+    template<class T>
+    friend __Myt operator -(const T & a, const __Myt & b){
+        auto t(b - a);
+        t.negate();
+        return std::move(t);
+    }
+    //a * b;
+    template<class T>
+    __Myt operator *(const T & a) const{return (__Myt(*this) *= a);}
+    template<class T>
+    friend __Myt operator *(const T & a, const __Myt & b){return (b * a);}
+    //a / b;
+    template<class T>
+    __Myt operator /(const T & a) const{return (__Myt(*this) /= a);}
+    template<class T>
+    friend __Myt operator /(const T & a, const __Myt & b){return (__Myt(a) /= b);}
+    //a % b;
+    template<class T>
+    __Myt operator %(const T & a) const{return (__Myt(*this) %= a);}
+    template<class T>
+    friend __Myt operator %(const T & a, const __Myt & b){return (__Myt(a) %= b);}
     //a <<= 3;
     __Myt & operator <<=(int a){
         if(a < 0)
@@ -343,73 +413,6 @@ public:
         shrink();
         return *this;
     }
-    //a += b;
-    __Myt & operator +=(const __Myt & a) { add(a.sign_, a.data_); return *this; }
-    template<typename T>
-    __Myt & operator +=(const T & a) {
-        add(__SupportTypeT<T>(a));
-        return *this;
-    }
-    //a -= b;
-    __Myt & operator -=(const __Myt & a){add(!a.sign_, a.data_);return *this;}
-    template<typename T>
-    __Myt & operator -=(const T & a) {
-        sub(__SupportTypeT<T>(a));
-        return *this;
-    }
-    //a *= b;
-    __Myt & operator *=(const __Myt & a){mul(a.sign_, a.data_);return *this;}
-    template<typename T>
-    __Myt & operator *=(const T & a) {
-        mul(__SupportTypeT<T>(a));
-        return *this;
-    }
-    //a /= b;
-    __Myt & operator /=(const __Myt & a){div(a.sign_, a.data_);return *this;}
-    template<typename T>
-    __Myt & operator /=(const T & a) {
-        div(__SupportTypeT<T>(a));
-        return *this;
-    }
-    //a %= b;
-    __Myt & operator %=(const __Myt & a){mod(a.sign_, a.data_);return *this;}
-    template<typename T>
-    __Myt & operator %=(const T & a) {
-        mod(__SupportTypeT<T>(a));
-        return *this;
-    }
-    //a << 3; a >> 3;
-    __Myt operator <<(int a) const{return (__Myt(*this) <<= a);}
-    __Myt operator >>(int a) const{return (__Myt(*this) >>= a);}
-    //a + b;
-    template<class T>
-    __Myt operator +(const T & a) const{return (__Myt(*this) +=a);}
-    template<class T>
-    friend __Myt operator +(const T & a, const __Myt & b){return (b + a);}
-    //a - b;
-    template<class T>
-    __Myt operator -(const T & a) const{return (__Myt(*this) -= a);}
-    template<class T>
-    friend __Myt operator -(const T & a, const __Myt & b){
-        auto t(b - a);
-        t.negate();
-        return std::move(t);
-    }
-    //a * b;
-    template<class T>
-    __Myt operator *(const T & a) const{return (__Myt(*this) *= a);}
-    template<class T>
-    friend __Myt operator *(const T & a, const __Myt & b){return (b * a);}
-    //a / b;
-    template<class T>
-    __Myt operator /(const T & a) const{return (__Myt(*this) /= a);}
-    template<class T>
-    friend __Myt operator /(const T & a, const __Myt & b){return (__Myt(a) /= b);}
-    //a % b;
-    template<class T>
-    __Myt operator %(const T & a) const{return (__Myt(*this) %= a);}
-    template<class T>
-    friend __Myt operator %(const T & a, const __Myt & b){return (__Myt(a) %= b);}
     //bool(a); !a;
     explicit operator bool() const{return !operator !();}
     bool operator !() const{return data_.empty();}
@@ -481,32 +484,30 @@ public:
     }
 private:
     void from(const __SInt & a){
-        data_.clear();
-        sign_ = (a < 0);
+        reset(a < 0);
         if(a)
-            data_.push_back(sign_ ? -a : a);
+            data_.push_back(abs(a));
     }
     void from(const __Int & a){
-        data_.clear();
-        sign_ = false;
+        reset();
         if(a)
             data_.push_back(a);
     }
     void from(const std::string & a){
         switch(checkBase(a)){
             case 2: {
-                data_.clear();
+                reset('-' == a[0]);
                 BitOp<__Data> bits(data_);
                 for (auto it = a.rbegin(); it != a.rend() && 'b' != *it && 'B' != *it; bits.write(1, *it++ - '0'));
                 break; }
-            case 3:data_.clear(); break;
+            case 3:reset();break;
             case 8: {
-                data_.clear();
+                reset('-' == a[0]);
                 BitOp<__Data> bits(data_);
                 for (auto it = a.rbegin(); it != a.rend() && '+' != *it && '-' != *it; bits.write(3, *it++ - '0'));
                 break; }
             case 10:{
-                data_.clear();
+                reset('-' == a[0]);
                 std::string t(a);
                 if('+' == t[0] || '-' == t[0])
                     t[0] = '0';
@@ -515,33 +516,35 @@ private:
                 for(bool end = false;!end;bits.write(1, divByTwo(t, end)));
                 break;}
             case 16:{
-                data_.clear();
+                reset('-' == a[0]);
                 BitOp<__Data> bits(data_);
                 for (auto it = a.rbegin(); it != a.rend() && 'x' != *it && 'X' != *it; bits.write(4, unhex(*it++)));
                 break; }
             default:throw std::invalid_argument("Input is not a integer number");
         }
-        sign_ = ('-' == a[0]);
         shrink();
     }
     void negate(){
         if(*this)
             sign_ = !sign_;
     }
-    void add(const __Int & a){ }   //TODO
-    void add(const __SInt & a){a < 0 ? sub(__Int(-a)) : add(__Int(a));}
-    void add(const std::string & a) {*this += __Myt(a);}
-    void add(bool s, const __Data & a){
-        if(sign_ == s)
-            addData(a);
-        else if(compare(a) < 0){
-            sign_ = s;
-            subByData(a);
-        }else
-            subData(a);
+    void add(const __Int & a){add(false, a);}
+    void add(const __SInt & a){add((a < 0), abs(a));}
+    void add(const std::string & a){*this += __Myt(a);}
+    template<class T>
+    void add(bool s, const T & a){
+        if(sign_ == s){
+            addAbs(a);
+            return;
+        }
+        switch(compare(a)){
+            case 0:reset();break;
+            case 1:subAbs(a);break;
+            default:sign_ = s;subByAbs(a);
+        }
     }
-    void sub(const __Int & a) { }   //TODO
-    void sub(const __SInt & a) {a < 0 ? add(__Int(-a)) : sub(__Int(a));}
+    void sub(const __Int & a) {add(true, a);}
+    void sub(const __SInt & a) {add((a > 0), abs(a));}
     void sub(const std::string & a) {*this -= __Myt(a);}
     void mul(const __SInt & a) {}   //TODO
     void mul(const __Int & a) { }   //TODO
@@ -555,11 +558,11 @@ private:
     void mod(const __Int & a) { }   //TODO
     void mod(const std::string & a) {*this %= __Myt(a);}
     void mod(bool s, const __Data & a){}    //TODO
-    bool equal(const __SInt & a) const{return (sign_ == (a < 0) && 0 == compare(a < 0 ? -a : a));}
+    bool equal(const __SInt & a) const{return (sign_ == (a < 0) && 0 == compare(abs(a)));}
     bool equal(const __Int & a) const{return (!sign_ && 0 == compare(a));}
     bool equal(const std::string & a) const {return (*this == __Myt(a));}
     bool less(const __Int & a) const{return less(false, a);}
-    bool less(const __SInt & a) const{return less((a < 0), __Int(a < 0 ? -a : a));}
+    bool less(const __SInt & a) const{return less((a < 0), abs(a));}
     bool less(const std::string & a) const{return (*this < __Myt(a));}
     template<class T>
     bool less(bool s, const T & a) const{
@@ -568,29 +571,8 @@ private:
         const int r = compare(a);
         return (sign_ ? (1 == r) : (-1 == r));
     }
-    int compare(const __Int & a) const{
-        if(!a)
-            return (data_.empty() ? 0 : 1);
-        if(data_.size() < 1)
-            return -1;
-        else if(data_.size() > 1)
-            return 1;
-        return (data_[0] < a ? -1 : (data_[0] > a ? 1 : 0));
-    }
-    int compare(const __Data & a) const{
-        if(data_.size() < a.size())
-            return -1;
-        else if(data_.size() > a.size())
-            return 1;
-        for(int i = int(a.size() - 1);i >= 0;--i)
-            if(data_[i] < a[i])
-                return -1;
-            else if(data_[i] > a[i])
-                return 1;
-        return 0;
-    }
     bool greater(const __Int & a) const {return greater(false, a);}
-    bool greater(const __SInt & a) const {return greater((a < 0), (a < 0 ? -a : a));}
+    bool greater(const __SInt & a) const {return greater((a < 0), abs(a));}
     bool greater(const std::string & a) const {return (*this > __Myt(a));}
     bool greater(bool s, const __Int & a) const{
         if(sign_ != s)
@@ -599,6 +581,10 @@ private:
         return (sign_ ? (-1 == r) : (1 == r));
     }
 
+    void reset(bool s = false){
+        sign_ = s;
+        data_.clear();
+    }
     void shrink(){
         shrinkTailIf(data_, [](auto v){return (0 == v);});
         if(data_.empty() && sign_)
@@ -636,65 +622,101 @@ private:
         reverseAdd(ret, '0');
         return std::move(ret);
     }
-
-
-
-
-
-    void addData(const __Data & a){
-        if(a.empty())
-            return;
-        if(data_.empty()){
-            data_ = a;
-            return;
+    int compare(const __Int & a) const{
+        if(!a)
+            return (data_.empty() ? 0 : 1);
+        if(data_.size() < 1)
+            return -1;
+        else if(data_.size() > 1)
+            return 1;
+        return (data_[0] < a ? -1 : (data_[0] > a ? 1 : 0));
+    }
+    int compare(const __Data & a) const{
+        if(data_.size() < a.size())
+            return -1;
+        else if(data_.size() > a.size())
+            return 1;
+        for(int i = int(a.size() - 1);i >= 0;--i)
+            if(data_[i] < a[i])
+                return -1;
+            else if(data_[i] > a[i])
+                return 1;
+        return 0;
+    }
+    void addAbs(const __Int & a){(a ? addAbs({}, a) : (void)0);}
+    void addAbs(const __Data & a, const __Int & b = 0){
+        if(!b){
+            if(a.empty())
+                return;
+            if(data_.empty()){
+                data_ = a;
+                return;
+            }
         }
-        int c = 0;
+        __Int c = b;
         for(size_t i = 0;i < a.size() || c;++i){
             __Int t = c;
+            c = 0;
             if(i < a.size())
-                t += a[i];
+                c += plus(t, a[i]);
             if(i < data_.size())
-                data_[i] += t;
+                c += plus(data_[i], t);
             else
                 data_.push_back(t);
-            c = (t < a[i] || data_[i] < t ? 1 : 0);
         }
     }
-    void subData(const __Data & a){
-        if(a.empty())
+    void subAbs(const __Int & a){(a ? subAbs({}, a) : (void)0);}
+    void subAbs(const __Data & a, const __Int & b = 0){
+        if(a.empty() && !b)
             return;
-        int c = 0;
+        __Int c = b;
         for(size_t i = 0;i < a.size() || c;++i){
-            __Int t = c;
+            c = minus(data_[i], c);
             if(i < a.size())
-                t += a[i];
-            c = (t < a[i] || data_[i] < t ? 1 : 0);
-            data_[i] -= t;
+                c += minus(data_[i], a[i]);
         }
         shrink();
     }
-    void subByData(const __Data & a){
-        if(data_.empty()){
+    void subByAbs(const __Int & a){(a ? subByAbs({}, a) : (void)0);}
+    void subByAbs(const __Data & a, const __Int & b = 0){
+        if(data_.empty() && !b){
             data_ = a;
             return;
         }
-        int c = 0;
         __Data r;
-        for(size_t i = 0;i < data_.size() || c;++i){
+        __Int c = b, d = 0;
+        for(size_t i = 0;i < data_.size() || c || d;++i){
             __Int t = c;
+            c = 0;
+            d = minus(t, d);
+            if(i < a.size())
+                c += plus(t, a[i]);
             if(i < data_.size())
-                t += data_[i];
-            c = (t < data_[i] || a[i] < t ? 1 : 0);
-            r.push_back(a[i] - t);
+                d += minus(t, data_[i]);
+            if(c == d)
+                c = d = 0;
+            r.push_back(t);
         }
         r.swap(data_);
         shrink();
+    }
+    static __Int abs(const __SInt & a){
+        return (a < 0 ? -a : a);
+    }
+    static int plus(__Int & a, const __Int & b){
+        const auto t(a);
+        a += b;
+        return (a < t || a < b ? 1 : 0);
+    }
+    static int minus(__Int & a, const __Int & b){
+        const int r = (a < b ? 1 : 0);
+        a -= b;
+        return r;
     }
     //fields
     __Data data_;
     bool sign_ = false;
 };
-
 
 #endif
 
