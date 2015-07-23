@@ -237,8 +237,8 @@ private:
 class HugeNumber
 {
     //types
-    typedef HugeNumber                  __Myt;
-    typedef std::vector<__Int>          __Data;
+    typedef HugeNumber          __Myt;
+    typedef std::vector<__Int>  __Data;
     //constants
     static constexpr int kEachBytes = sizeof(__Int);
     static constexpr int kEachBits = CHAR_BIT * kEachBytes;
@@ -246,7 +246,10 @@ public:
     //functions
     HugeNumber(){}  //Cannot be default for "const HugeNumber a;"
     HugeNumber(const __Myt & a) = default;
-    HugeNumber(__Myt && a):data_(std::move(a.data_)), sign_(a.sign_){}
+    HugeNumber(__Myt && a)
+        : data_(std::move(a.data_))
+        , sign_(a.sign_)
+    {}
     template<typename T>
     explicit HugeNumber(const T & a){from(__SupportTypeT<T>(a));}
     __Myt & operator =(const __Myt & a) = default;
@@ -262,14 +265,14 @@ public:
         from(__SupportTypeT<T>(a));
         return *this;
     }
-
+    //+a; -a;
     __Myt operator +(){return *this;}
     __Myt operator -(){
         __Myt t(*this);
         t.negate();
         return std::move(t);
     }
-
+    //++a; --a;
     __Myt & operator ++() {
         *this += 1;
         return *this;
@@ -278,6 +281,7 @@ public:
         *this -= 1;
         return *this;
     }
+    //a++; a--;
     __Myt operator ++(int){
         auto t(*this);
         ++*this;
@@ -288,6 +292,7 @@ public:
         --*this;
         return std::move(t);
     }
+    //a <<= 3;
     __Myt & operator <<=(int a){
         if(a < 0)
             return (*this >>= (-a));
@@ -311,6 +316,7 @@ public:
         shrink();
         return *this;
     }
+    //a >>= 3;
     __Myt & operator >>=(int a){
         if(a < 0)
             return (*this <<= (-a));
@@ -337,44 +343,50 @@ public:
         shrink();
         return *this;
     }
+    //a += b;
     __Myt & operator +=(const __Myt & a) { add(a.sign_, a.data_); return *this; }
     template<typename T>
     __Myt & operator +=(const T & a) {
         add(__SupportTypeT<T>(a));
         return *this;
     }
+    //a -= b;
     __Myt & operator -=(const __Myt & a){add(!a.sign_, a.data_);return *this;}
     template<typename T>
     __Myt & operator -=(const T & a) {
         sub(__SupportTypeT<T>(a));
         return *this;
     }
+    //a *= b;
     __Myt & operator *=(const __Myt & a){mul(a.sign_, a.data_);return *this;}
     template<typename T>
     __Myt & operator *=(const T & a) {
         mul(__SupportTypeT<T>(a));
         return *this;
     }
+    //a /= b;
     __Myt & operator /=(const __Myt & a){div(a.sign_, a.data_);return *this;}
     template<typename T>
     __Myt & operator /=(const T & a) {
         div(__SupportTypeT<T>(a));
         return *this;
     }
+    //a %= b;
     __Myt & operator %=(const __Myt & a){mod(a.sign_, a.data_);return *this;}
     template<typename T>
     __Myt & operator %=(const T & a) {
         mod(__SupportTypeT<T>(a));
         return *this;
     }
-    __Myt operator <<(int a) const{return __Myt(*this).operator <<=(a);}
-    __Myt operator >>(int a) const{return __Myt(*this).operator >>=(a);}
-
+    //a << 3; a >> 3;
+    __Myt operator <<(int a) const{return (__Myt(*this) <<= a);}
+    __Myt operator >>(int a) const{return (__Myt(*this) >>= a);}
+    //a + b;
     template<class T>
     __Myt operator +(const T & a) const{return (__Myt(*this) +=a);}
     template<class T>
     friend __Myt operator +(const T & a, const __Myt & b){return (b + a);}
-
+    //a - b;
     template<class T>
     __Myt operator -(const T & a) const{return (__Myt(*this) -= a);}
     template<class T>
@@ -383,58 +395,61 @@ public:
         t.negate();
         return std::move(t);
     }
-
+    //a * b;
     template<class T>
     __Myt operator *(const T & a) const{return (__Myt(*this) *= a);}
     template<class T>
     friend __Myt operator *(const T & a, const __Myt & b){return (b * a);}
-
+    //a / b;
     template<class T>
     __Myt operator /(const T & a) const{return (__Myt(*this) /= a);}
     template<class T>
     friend __Myt operator /(const T & a, const __Myt & b){return (__Myt(a) /= b);}
-
+    //a % b;
     template<class T>
     __Myt operator %(const T & a) const{return (__Myt(*this) %= a);}
     template<class T>
     friend __Myt operator %(const T & a, const __Myt & b){return (__Myt(a) %= b);}
-
+    //bool(a); !a;
     explicit operator bool() const{return !operator !();}
     bool operator !() const{return data_.empty();}
-
+    //a == b;
     bool operator ==(const __Myt & a) const{return (sign_ == a.sign_ && data_ == a.data_);}
     template<typename T>
     bool operator ==(const T & a) const{return equal(__SupportTypeT<T>(a));}
     template<typename T>
     friend bool operator ==(const T & a, const __Myt & b){return (b == a);}
-
+    //a != b;
+    bool operator !=(const __Myt & a) const{return !(*this == a);}
     template<class T>
     bool operator !=(const T & a) const{return !(*this == a);}
     template<class T>
     friend bool operator !=(const T & a, const __Myt & b){return (b != a);}
-
+    //a < b;
     bool operator <(const __Myt & a) const{return less(a.sign_, a.data_);}
     template<typename T>
     bool operator <(const T & a) const{return less(__SupportTypeT<T>(a));}
     template<typename T>
     friend bool operator <(const T & a, const __Myt & b){return (b > a);}
-
+    //a > b;
     bool operator >(const __Myt & a) const{return (a < *this);}
     template<typename T>
     bool operator >(const T & a) const{return greater(__SupportTypeT<T>(a));}
     template<typename T>
     friend bool operator >(const T & a, const __Myt & b){return (b < a);}
-
+    //a <= b;
+    bool operator <=(const __Myt & a) const{return !(a < *this);}
     template<class T>
     bool operator <=(const T & a) const{return !(a < *this);}
     template<typename T>
     friend bool operator <=(const T & a, const __Myt & b){return !(b < a);}
-
+    //a >= b;
+    bool operator >=(const __Myt & a) const{return !(*this < a);}
     template<class T>
     bool operator >=(const T & a) const{return !(*this < a);}
     template<typename T>
     friend bool operator >=(const T & a, const __Myt & b){return !(a < b);}
-
+    //to string
     std::string toString(int base = 10, bool uppercase = false, bool showbase = false) const{
         const char * const kDigits = (uppercase ? "0123456789ABCDEF" : "0123456789abcdef");
         switch(base){
@@ -540,9 +555,9 @@ private:
     void mod(const __Int & a) { }   //TODO
     void mod(const std::string & a) {*this %= __Myt(a);}
     void mod(bool s, const __Data & a){}    //TODO
-    bool equal(const __SInt & a) {return false;}   //TODO
-    bool equal(const __Int & a) {return false; }   //TODO
-    bool equal(const std::string & a) {return (*this == __Myt(a));}
+    bool equal(const __SInt & a) const{return (sign_ == (a < 0) && 0 == compare(a < 0 ? -a : a));}
+    bool equal(const __Int & a) const{return (!sign_ && 0 == compare(a));}
+    bool equal(const std::string & a) const {return (*this == __Myt(a));}
     bool less(const __Int & a) const{return less(false, a);}
     bool less(const __SInt & a) const{return less((a < 0), __Int(a < 0 ? -a : a));}
     bool less(const std::string & a) const{return (*this < __Myt(a));}

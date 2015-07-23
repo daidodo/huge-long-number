@@ -8,6 +8,10 @@ using namespace std;
 
 typedef HugeNumber Int;
 
+#ifdef WIN32
+#   define __PRETTY_FUNCTION__  __FUNCSIG__
+#endif
+
 #define ASSERT_EQ(a, b)     assert_eq(a, b, __LINE__, __PRETTY_FUNCTION__)
 
 void assert_eq(const string & a, const Int & b, int line, const char * func)
@@ -207,33 +211,52 @@ void test_ctor()
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
-void test_positive()
+void test_sign()
 {
-    Int a;
-    a = 123;
-    ASSERT_EQ("123", +a);
-    a = 0;
-    ASSERT_EQ("0", +a);
-    a = -0;
-    ASSERT_EQ("0", +a);
-    a = -123;
-    ASSERT_EQ("-123", +a);
+    {   //positive
+        Int a;
+        a = 123;
+        ASSERT_EQ("123", +a);
+        a = 0;
+        ASSERT_EQ("0", +a);
+        a = -0;
+        ASSERT_EQ("0", +a);
+        a = -123;
+        ASSERT_EQ("-123", +a);
+    }{  //negate
+        Int a;
+        a = 123;
+        ASSERT_EQ("-123", -a);
+        a = 0;
+        ASSERT_EQ("0", -a);
+        a = -0;
+        ASSERT_EQ("0", -a);
+        a = -123;
+        ASSERT_EQ("123", -a);
+    }
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
-void test_negate()
+template<class T, class S>
+static int comp(const T & a, const S & b)
 {
-    Int a;
-    a = 123;
-    ASSERT_EQ("-123", -a);
-    a = 0;
-    ASSERT_EQ("0", -a);
-    a = -0;
-    ASSERT_EQ("0", -a);
-    a = -123;
-    ASSERT_EQ("123", -a);
-    cout<<__FUNCTION__<<"() SUCC\n";
+    return (a == b ? 0 : (a < b ? -1 : 1));
 }
+
+#define __TEST_COMP(cp, a, b)   do{ \
+    ASSERT_EQ(0 == cp, a == b); \
+    ASSERT_EQ(0 == cp, b == a);  \
+    ASSERT_EQ(0 != cp, a != b); \
+    ASSERT_EQ(0 != cp, b != a);  \
+    ASSERT_EQ(-1 == cp, a < b); \
+    ASSERT_EQ(1 == cp, b < a);  \
+    ASSERT_EQ(1 == cp, a > b);  \
+    ASSERT_EQ(-1 == cp, b > a); \
+    ASSERT_EQ(1 != cp, a <= b); \
+    ASSERT_EQ(-1 != cp, b <= a);  \
+    ASSERT_EQ(-1 != cp, a >= b); \
+    ASSERT_EQ(1 != cp, b >= a);  \
+}while(0)
 
 template<typename T>
 void test_compare_type()
@@ -245,71 +268,68 @@ void test_compare_type()
         const Int a(ma), b(mi), c(z);
         for(int j = -10;j <= 10;++j){
             const T maj(ma + j), mij(mi + j), zj(z + j);
-            ASSERT_EQ(ma < maj, a < maj);
-            ASSERT_EQ(maj < ma, maj < a);
-            ASSERT_EQ(mi < mij, b < mij);
-            ASSERT_EQ(mij < mi, mij < b);
-            ASSERT_EQ(z < zj, c < zj);
-            ASSERT_EQ(zj < z, zj < c);
-
-            ASSERT_EQ(ma > maj, a > maj);
-            ASSERT_EQ(maj > ma, maj > a);
-            ASSERT_EQ(mi > mij, b > mij);
-            ASSERT_EQ(mij > mi, mij > b);
-            ASSERT_EQ(z > zj, c > zj);
-            ASSERT_EQ(zj > z, zj > c);
+            __TEST_COMP(comp(ma, maj), a, maj);
+            __TEST_COMP(comp(mi, mij), b, mij);
+            __TEST_COMP(comp(z, zj), c, zj);
         }
     }
 }
 
-void test_compare_str()
+void test_compare_str_type(int cp, const Int & a, const string & s)
 {
     constexpr int kSize = 200;
     char ss[kSize];
     const char (&css)[sizeof ss] = ss;
-    string s = "0";
-    {
-        strcpy(ss, s.c_str());
-        const Int a(s), b(a + 1), c(a - 1);
-        ASSERT_EQ(false, a < s);
-        ASSERT_EQ(false, s < a);
-        ASSERT_EQ(false, a < s.c_str());
-        ASSERT_EQ(false, s.c_str() < a);
-        ASSERT_EQ(false, a < ss);
-        ASSERT_EQ(false, ss < a);
-        ASSERT_EQ(false, a < css);
-        ASSERT_EQ(false, css < a);
-        //TODO
-    }
+    strcpy(ss, s.c_str());
+    __TEST_COMP(cp, a, s);
+    __TEST_COMP(cp, a, s.c_str());
+    __TEST_COMP(cp, a, ss);
+    __TEST_COMP(cp, a, css);
+}
+
+void test_compare_str()
+{
+    test_compare_str_type(1, Int("2415134134141341302394292428"), "0");
+    test_compare_str_type(0, Int(), "0");
+    test_compare_str_type(-1, Int("-2415134134141341302394292428"), "0");
+
+    test_compare_str_type(1, Int("2415134134141341302394292428"), "123");
+    test_compare_str_type(-1, Int(), "123");
+    test_compare_str_type(-1, Int("-2415134134141341302394292428"), "123");
+
+    test_compare_str_type(1, Int("2415134134141341302394292429"), "2415134134141341302394292428");
+    test_compare_str_type(0, Int("2415134134141341302394292428"), "2415134134141341302394292428");
+    test_compare_str_type(-1, Int("2415134134141341302394292427"), "2415134134141341302394292428");
+    test_compare_str_type(-1, Int(), "2415134134141341302394292428");
+    test_compare_str_type(-1, Int("-2415134134141341302394292427"), "2415134134141341302394292428");
+    test_compare_str_type(-1, Int("-2415134134141341302394292428"), "2415134134141341302394292428");
+    test_compare_str_type(-1, Int("-2415134134141341302394292429"), "2415134134141341302394292428");
+
+    test_compare_str_type(1, Int("2415134134141341302394292428"), "-123");
+    test_compare_str_type(1, Int(), "-123");
+    test_compare_str_type(-1, Int("-2415134134141341302394292428"), "-123");
+
+    test_compare_str_type(1, Int("2415134134141341302394292429"), "-2415134134141341302394292428");
+    test_compare_str_type(1, Int("2415134134141341302394292428"), "-2415134134141341302394292428");
+    test_compare_str_type(1, Int("2415134134141341302394292427"), "-2415134134141341302394292428");
+    test_compare_str_type(1, Int(), "-2415134134141341302394292428");
+    test_compare_str_type(1, Int("-2415134134141341302394292427"), "-2415134134141341302394292428");
+    test_compare_str_type(0, Int("-2415134134141341302394292428"), "-2415134134141341302394292428");
+    test_compare_str_type(-1, Int("-2415134134141341302394292429"), "-2415134134141341302394292428");
 }
 
 void test_compare()
 {
     {
         const Int a(-1), b(0), c(1);
-        ASSERT_EQ(false, a < a);
-        ASSERT_EQ(false, b < b);
-        ASSERT_EQ(false, c < c);
-        ASSERT_EQ(true, a < b);
-        ASSERT_EQ(true, b < c);
-        ASSERT_EQ(true, a < c);
-        ASSERT_EQ(false, b < a);
-        ASSERT_EQ(false, c < b);
-        ASSERT_EQ(false, c < a);
-        //a < true;
-        //a < 1.;
-
-        ASSERT_EQ(false, a > a);
-        ASSERT_EQ(false, b > b);
-        ASSERT_EQ(false, c > c);
-        ASSERT_EQ(true, b > a);
-        ASSERT_EQ(true, c > b);
-        ASSERT_EQ(true, c > a);
-        ASSERT_EQ(false, a > b);
-        ASSERT_EQ(false, b > c);
-        ASSERT_EQ(false, b > c);
-        //true > a;
-        //1. > a;
+        __TEST_COMP(0, a, a);
+        __TEST_COMP(0, b, b);
+        __TEST_COMP(0, c, c);
+        __TEST_COMP(-1, a, b);
+        __TEST_COMP(-1, b, c);
+        __TEST_COMP(-1, a, c);
+        //__TEST_COMP(-1, b, true);
+        //__TEST_COMP(-1, b, 1.);
     }
     test_compare_type<char>();
     test_compare_type<wchar_t>();
@@ -329,13 +349,33 @@ void test_compare()
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
+#undef __TEST_COMP
+
+void test_bool()
+{
+    const Int a;
+    const Int b("12345"), c("-12345");
+    const Int d("1304165134617364173013561034"), e("-1304165134617364173013561034");
+    ASSERT_EQ(false, (a ? true : false));
+    ASSERT_EQ(true, !a);
+    ASSERT_EQ(true, (b ? true : false));
+    ASSERT_EQ(false, !b);
+    ASSERT_EQ(true, (c ? true : false));
+    ASSERT_EQ(false, !c);
+    ASSERT_EQ(true, (d ? true : false));
+    ASSERT_EQ(false, !d);
+    ASSERT_EQ(true, (e ? true : false));
+    ASSERT_EQ(false, !e);
+
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
+
 int main()
 {
     test_ctor();
-    test_positive();
-    test_negate();
-
+    test_sign();
     test_compare();
+    test_bool();
 
     return 0;
 }
