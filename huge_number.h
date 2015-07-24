@@ -174,7 +174,7 @@ class BitOp
     T & c_;
     int p_;
 public:
-    explicit BitOp(T & c):c_(c),p_(0){}
+    explicit BitOp(T & c, int p = 0):c_(c),p_(p){}
     void seek(int p){
         const int kTotalBits = int(kEachBits * c_.size());
         p_ = p;
@@ -266,28 +266,31 @@ public:
         from(__SupportTypeT<T>(a));
         return *this;
     }
-    //+a; -a;
+    //+a;
     __Myt operator +(){return *this;}
+    //-a;
     __Myt operator -(){
         __Myt t(*this);
         t.negate();
         return std::move(t);
     }
-    //++a; --a;
+    //++a;
     __Myt & operator ++() {
         *this += 1;
         return *this;
     }
+    //--a;
     __Myt & operator --() {
         *this -= 1;
         return *this;
     }
-    //a++; a--;
+    //a++;
     __Myt operator ++(int){
         auto t(*this);
         ++*this;
         return std::move(t);
     }
+    //a--;
     __Myt operator --(int){
         auto t(*this);
         --*this;
@@ -328,9 +331,16 @@ public:
         mod(__SupportTypeT<T>(a));
         return *this;
     }
-    //a << 3; a >> 3;
-    __Myt operator <<(int a) const{return (__Myt(*this) <<= a);}
-    __Myt operator >>(int a) const{return (__Myt(*this) >>= a);}
+    //a <<= 3;
+    __Myt & operator <<=(int a){
+        (a < 0 ? shiftRight(-__Int(a)) : shiftLeft(a));
+        return *this;
+    }
+    //a >>= 3;
+    __Myt & operator >>=(int a){
+        (a < 0 ? shiftLeft(-__Int(a)) : shiftRight(a));
+        return *this;
+    }
     //a + b;
     __Myt operator +(const __Myt & a) const{return (__Myt(*this) += a);}
     template<class T>
@@ -362,59 +372,13 @@ public:
     __Myt operator %(const T & a) const{return (__Myt(*this) %= a);}
     template<class T>
     friend __Myt operator %(const T & a, const __Myt & b){return (__Myt(a) %= b);}
-    //a <<= 3;
-    __Myt & operator <<=(int a){
-        if(a < 0)
-            return (*this >>= (-a));
-        if(!a || !*this)
-            return *this;
-        const int kTotalBits = int(kEachBits * data_.size());
-        __Data r((kTotalBits + a + kEachBits - 1) / kEachBits);
-        auto t = r.begin() + a / kEachBits, f = data_.begin();
-        const int s1 = a % kEachBits;
-        if(s1){
-            const int s2 = kEachBits - s1;
-            const __Int m1 = (__Int(1) << s2) - 1;
-            const __Int m2 = (__Int(1) << s1) - 1;
-            for(;f != data_.end();++f){
-                *t++ += (*f & m1) << s1;
-                *t = (*f >> s2) & m2;
-            }
-        }else
-            std::copy(f, data_.end(), t);
-        r.swap(data_);
-        shrink();
-        return *this;
-    }
-    //a >>= 3;
-    __Myt & operator >>=(int a){
-        if(a < 0)
-            return (*this <<= (-a));
-        if(!a)
-            return *this;
-        const int kTotalBits = int(kEachBits * data_.size());
-        if(a < kTotalBits){
-            auto t = data_.begin(), f = t + a / kEachBits;
-            const int s1 = a % kEachBits;
-            if(s1){
-                const int s2 = kEachBits - s1;
-                const __Int m1 = (__Int(1) << s2) - 1;
-                const __Int m2 = (__Int(1) << s1) - 1;
-                for(;f != data_.end();++t){
-                    *t = (*f >> s1) & m1;
-                    if(++f != data_.end())
-                        *t += (*f & m2) << s2;
-                }
-                data_.erase(t, data_.end());
-            }else
-                data_.erase(t, f);
-        }else
-            data_.clear();
-        shrink();
-        return *this;
-    }
-    //bool(a); !a;
+    //a << 3;
+    __Myt operator <<(int a) const{return (__Myt(*this) <<= a);}
+    //a >> 3;
+    __Myt operator >>(int a) const{return (__Myt(*this) >>= a);}
+    //if(a){}
     explicit operator bool() const{return !operator !();}
+    //if(!a){}
     bool operator !() const{return data_.empty();}
     //a == b;
     bool operator ==(const __Myt & a) const{return (sign_ == a.sign_ && data_ == a.data_);}
@@ -452,7 +416,7 @@ public:
     bool operator >=(const T & a) const{return !(*this < a);}
     template<typename T>
     friend bool operator >=(const T & a, const __Myt & b){return !(a < b);}
-    //to string
+    //a.toString();
     std::string toString(int base = 10, bool uppercase = false, bool showbase = false) const{
         const char * const kDigits = (uppercase ? "0123456789ABCDEF" : "0123456789abcdef");
         switch(base){
@@ -465,6 +429,7 @@ public:
         assert(false && "Unsupported base");
         return std::string();
     }
+    //cout<<a;
     friend inline std::ostream & operator <<(std::ostream & os, const __Myt & a){
         const auto fmt = os.flags();
         const int base = ((fmt & os.hex) ? 16 : ((fmt & os.oct) ? 8 : 10));
@@ -558,6 +523,25 @@ private:
     void mod(const __Int & a) { }   //TODO
     void mod(const std::string & a) {*this %= __Myt(a);}
     void mod(bool s, const __Data & a){}    //TODO
+    void shiftLeft(const __Int & a){
+        if(!a || !*this)
+            return;
+        __Data r((a + kEachBits - 1) / kEachBits);
+        BitOp<__Data> bits(r, a);
+        for(const auto & v : data_)
+            bits.write(kEachBits, v);
+        data_.swap(r);
+        shrink();
+    }
+    void shiftRight(const __Int & a){
+        if(!a)
+            return;
+        __Data r;
+        BitOp<__Data> bits(data_, a);
+        for(__Int v = 0;bits.read(kEachBits, v);r.push_back(v));
+        data_.swap(r);
+        shrink();
+    }
     bool equal(const __SInt & a) const{return (sign_ == (a < 0) && 0 == compare(abs(a)));}
     bool equal(const __Int & a) const{return (!sign_ && 0 == compare(a));}
     bool equal(const std::string & a) const {return (*this == __Myt(a));}

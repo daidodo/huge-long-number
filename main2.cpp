@@ -689,6 +689,11 @@ void test_add_sub()
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
+void test_shift()
+{
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
+
 int main()
 {
     test_ctor();
@@ -697,6 +702,7 @@ int main()
     test_bool();
     test_incr_decr();
     test_add_sub();
+    test_shift();
 
     return 0;
 }
