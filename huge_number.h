@@ -685,7 +685,7 @@ private:
         }
         __Data r;
         __Int c = b, d = 0;
-        for(size_t i = 0;i < data_.size() || c || d;++i){
+        for(size_t i = 0;i < a.size() || c || d;++i){
             __Int t = c;
             c = 0;
             d = minus(t, d);
