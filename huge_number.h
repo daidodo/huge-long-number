@@ -154,15 +154,22 @@ static int checkBase(const std::string & a)
 }
 
 template<typename T>
+T mask(int bits)
+{
+    constexpr int kEachBits = CHAR_BIT * sizeof(T);
+    return (bits < 1 ? 0 : (bits >= kEachBits ? T(-1) : ((T(1) << bits) - 1)));
+}
+
+template<typename T>
 T getBits(const T & val, int pos, int bits)
 {
-    return (val >> pos) & ((T(1) << bits) - 1);
+    return ((val >> pos) & mask<T>(bits));
 }
 
 template<typename T>
 void setBits(T & val, int pos, int bits, const T & v)
 {
-    const T m = (T(1) << bits) - 1;
+    const T m = mask<T>(bits);
     val &= ~(m << pos);
     val += (v & m) << pos;
 }
