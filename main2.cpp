@@ -468,8 +468,8 @@ void test_add_sub_type()
         __TEST_ADD_SUB2(z, z);
         __TEST_ADD_SUB2(i, 2 * i);
         if(mi < 0){
-            __TEST_ADD_SUB(-i, i, z);
-            __TEST_ADD_SUB2(-i, -2 * i);
+            __TEST_ADD_SUB(0 - i, i, z);
+            __TEST_ADD_SUB2(0 - i, -2 * i);
         }
     }
 }
@@ -689,6 +689,45 @@ void test_add_sub()
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
+void shiftLeft(Int & a) { a += a; }
+void shiftLeft(Int & a, int v) { for (; v-- > 0; shiftLeft(a)); }
+
+#define __TEST_SHIFT(a, b, i)   do{ \
+    Int aa(a), bb(b);               \
+    ASSERT_EQ(b, aa <<= i);         \
+    ASSERT_EQ(a, aa <<= (-i));      \
+    ASSERT_EQ(a, bb >>= i);         \
+    ASSERT_EQ(b, bb >>= (-i));      \
+    ASSERT_EQ(b, a << i);           \
+    ASSERT_EQ(a, b >> i);           \
+    ASSERT_EQ(a, b << (-i));        \
+    ASSERT_EQ(b, a >> (-i));        \
+}while(0)
+
+
+void test_shift_exp(const Int & a)
+{
+    Int b(a);
+    for (int i = 0; i <= 1000; ++i, shiftLeft(b))
+        __TEST_SHIFT(a, b, i);
+}
+
+#undef __TEST_SHIFT
+
+void test_shift()
+{
+    test_shift_exp(Int("-6666666666666666666666666666666666666"));
+    test_shift_exp(Int("-15000000000000000000"));
+    test_shift_exp(Int(-123456));
+    test_shift_exp(Int(-1));
+    test_shift_exp(Int(0));
+    test_shift_exp(Int(1));
+    test_shift_exp(Int(12345));
+    test_shift_exp(Int("14000000000000000000"));
+    test_shift_exp(Int("6666666666666676666666666666666666666"));
+    cout<<__FUNCTION__<<"() SUCC\n";
+}
+
 int main()
 {
     test_ctor();
@@ -697,6 +736,7 @@ int main()
     test_bool();
     test_incr_decr();
     test_add_sub();
+    test_shift();
 
     return 0;
 }
