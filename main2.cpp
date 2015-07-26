@@ -728,6 +728,58 @@ void test_shift()
     cout<<__FUNCTION__<<"() SUCC\n";
 }
 
+#define __TEST_MUL_DIV(aa, bb, qq, rr)  do{ \
+    const Int a(aa), b(bb), q(qq), r(rr), p(a - r); \
+    ASSERT_EQ(p, Int(b) *= q);  \
+    ASSERT_EQ(p, Int(b) *= qq); \
+    ASSERT_EQ(q, Int(a) /= b);  \
+    ASSERT_EQ(q, Int(a) /= bb); \
+}while(0)
+
+template<typename T>
+void test_mul_div_type(T aa, T bb)
+{
+    assert(bb);
+    const T qq(aa / bb), rr(aa % bb);
+    __TEST_MUL_DIV(aa, bb, qq, rr);
+}
+
+template<typename T>
+void test_mul_div_type()
+{
+    const T ma = numeric_limits<T>::max();
+    const T mi = numeric_limits<T>::min();
+    const T z = 0;
+    for(T i = 0;i <= 10;++i){
+        test_mul_div_type(ma - i, 1 + i);
+        test_mul_div_type(ma - i, -1 - i);
+        test_mul_div_type(mi + i, 1 + i);
+        test_mul_div_type(mi + i, -1 - i);
+        test_mul_div_type(z + i, 1 + i);
+        test_mul_div_type(z + i, -1 - i);
+        test_mul_div_type(z - i, 1 + i);
+        test_mul_div_type(z - i, -1 - i);
+    }
+}
+
+void test_mul_div()
+{
+    test_mul_div_type<char>();
+    test_mul_div_type<wchar_t>();
+    test_mul_div_type<char16_t>();
+    test_mul_div_type<char32_t>();
+    test_mul_div_type<signed char>();
+    test_mul_div_type<unsigned char>();
+    test_mul_div_type<short>();
+    test_mul_div_type<unsigned short>();
+    test_mul_div_type<int>();
+    test_mul_div_type<unsigned int>();
+    test_mul_div_type<long>();
+    test_mul_div_type<unsigned long>();
+    test_mul_div_type<long long>();
+    test_mul_div_type<unsigned long long>();
+}
+
 int main()
 {
     test_ctor();
@@ -737,6 +789,7 @@ int main()
     test_incr_decr();
     test_add_sub();
     test_shift();
+    test_mul_div();
 
     return 0;
 }

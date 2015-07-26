@@ -214,6 +214,12 @@ public:
         set(p_, bits, val);
         seek(p_ + bits);
     }
+    bool writeReverse(int bits, const __Int & val){
+        if(p_ < bits)
+            return false;
+        set(p_ -= bits, bits, val);
+        return true;
+    }
 private:
     bool get(int p, int bits, __Int & val) const{
         assert(0 < bits && bits <= kEachBits);
@@ -308,11 +314,11 @@ public:
     template<typename T>
     __Myt & operator *=(const T & a) { mul(__SupportTypeT<T>(a)); return *this; }
     //a /= b;
-    __Myt & operator /=(const __Myt & a) { div(a.sign_, a.data_); return *this; }
+    __Myt & operator /=(const __Myt & a) { div(a); return *this; }
     template<typename T>
     __Myt & operator /=(const T & a) { return (*this /= __Myt(a)); }
     //a %= b;
-    __Myt & operator %=(const __Myt & a) { mod(a.sign_, a.data_); return *this; }
+    __Myt & operator %=(const __Myt & a) { mod(a); return *this; }
     template<typename T>
     __Myt & operator %=(const T & a) { return (*this %= __Myt(a)); }
     //a <<= n;
@@ -518,8 +524,53 @@ private:
         data_.swap(r.data_);
         shrink();
     }
-    void div(bool s, const __Data & a) {}    //TODO
-    void mod(bool s, const __Data & a) {}    //TODO
+    void div(const __Myt & a) {
+        if(!a)
+            throw std::runtime_error("Divided by 0");
+        if(!*this)
+            return;
+        const int p = topBit(data_) - topBit(a.data_);
+        if(p >= 0){
+            __Myt d, r;
+            divModAbs(a, d, r, p);
+            data_.swap(d.data_);
+            sign_ = (sign_ != a.sign_);
+            shrink();
+        }else
+            reset();
+    }
+    void mod(const __Myt & a) {
+        if(!a)
+            throw std::runtime_error("Divided by 0");
+        if(!*this)
+            return;
+        const int p = topBit(data_) - topBit(a.data_);
+        if(p >= 0){
+            __Myt q, r;
+            divModAbs(a, q, r, p);
+            data_.swap(r.data_);
+            shrink();
+        }
+        if(*this < 0)
+            *this += a;
+    }
+    void divModAbs(const __Myt & a, __Myt & q, __Myt & r, int p) const{
+        r.data_ = data_;
+        q.data_.resize((p + kEachBits) / kEachBits);
+        BitOp<__Data> bits(q.data_, p + 1);
+        __Myt t(a << p);
+        t.sign_ = false;
+        assert(0 <= p);
+        for(;;t >>= 1){
+            if(t <= r){
+                r -= t;
+                bits.writeReverse(1, 1);
+            }else
+                bits.writeReverse(1, 0);    //OPT
+            if(--p < 0)
+                break;
+        }
+    }
     void shiftLeft(const __Int & a) {
         if (!a || !*this)
             return;
@@ -691,14 +742,6 @@ private:
         sign_ = (sign_ != s);
         return one;
     }
-    /*bool divSign(bool s, bool zero, bool one) {
-        if (zero)
-            throw std::runtime_error("Divided by zero");
-        if (!*this)
-            return true;
-        sign_ = (sign_ != s);
-        return one;
-    }*/
     static __Int abs(const __SInt & a) {
         return (a < 0 ? -a : a);
     }
@@ -711,6 +754,9 @@ private:
         const int r = (a < b ? 1 : 0);
         a -= b;
         return r;
+    }
+    static int topBit(const __Data & a){
+        return 0;   //TODO
     }
     //fields
     __Data data_;
