@@ -938,7 +938,7 @@ void test_swap()
     cout << __FUNCTION__ << "() SUCC\n";
 }
 
-int main()
+int main1()
 {
     test_ctor();
     test_sign();
@@ -950,4 +950,14 @@ int main()
     test_mul_div();
     test_swap();
     return 0;
+}
+
+int main()
+{
+    HugeNumber a(1);
+    for (int i = 2; i <= 1000; ++i)
+        a *= i;
+    cout << "1000! = \n"
+        << a << endl;
+    return 1;
 }
