@@ -199,6 +199,13 @@ void test_ctor_str()
     test_ctor_str_base_case(16, false, "0x", "123456789abcdef", "0123456789abcdef");
     test_ctor_str_base_case(16, true, "0X", "123456789ABCDEF", "0123456789ABCDEF");
     {
+        string s;
+        const char ss[12] = { 0 };
+        Int a(s), b(s.c_str()), c(ss);
+        ASSERT_EQ("0", a);
+        ASSERT_EQ("0", b);
+        ASSERT_EQ("0", c);
+    } {
         char s[124];
         strcpy(s, "124");
         const char ss[123] = "123";
@@ -889,6 +896,48 @@ void test_mul_div()
     cout << __FUNCTION__ << "() SUCC\n";
 }
 
+#define __TEST_SWAP(s1, s2)   do{ \
+    Int a(s1), b(s2);   \
+    a.swap(b);          \
+    ASSERT_EQ(s1, b);   \
+    ASSERT_EQ(s2, a);   \
+    b.swap(a);          \
+    ASSERT_EQ(s1, a);   \
+    ASSERT_EQ(s2, b);   \
+    swap(a, b);         \
+    ASSERT_EQ(s1, b);   \
+    ASSERT_EQ(s2, a);   \
+    swap(b, a);         \
+    ASSERT_EQ(s1, a);   \
+    ASSERT_EQ(s2, b);   \
+}while(0)
+
+void test_swap()
+{
+    {
+        __TEST_SWAP("0", "0");
+        __TEST_SWAP("0", "12345");
+        __TEST_SWAP("0", "-12345");
+        __TEST_SWAP("0", "514151445243624352623452446245243512345");
+        __TEST_SWAP("0", "-514151445243624352623452446245243512345");
+    } {
+        __TEST_SWAP("12345", "23456");
+        __TEST_SWAP("12345", "-23456");
+        __TEST_SWAP("12345", "514151445243624352623452446245243512345");
+        __TEST_SWAP("12345", "-514151445243624352623452446245243512345");
+        __TEST_SWAP("-12345", "23456");
+        __TEST_SWAP("-12345", "-23456");
+        __TEST_SWAP("-12345", "514151445243624352623452446245243512345");
+        __TEST_SWAP("-12345", "-514151445243624352623452446245243512345");
+    } {
+        __TEST_SWAP("1232142346563457435684567456745", "514151445243624352623452446245243512345");
+        __TEST_SWAP("1232142346563457435684567456745", "-514151445243624352623452446245243512345");
+        __TEST_SWAP("-1232142346563457435684567456745", "514151445243624352623452446245243512345");
+        __TEST_SWAP("-1232142346563457435684567456745", "-514151445243624352623452446245243512345");
+    }
+    cout << __FUNCTION__ << "() SUCC\n";
+}
+
 int main()
 {
     test_ctor();
@@ -899,6 +948,6 @@ int main()
     test_add_sub();
     test_shift();
     test_mul_div();
-
+    test_swap();
     return 0;
 }

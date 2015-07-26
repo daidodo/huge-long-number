@@ -3,14 +3,14 @@
 
 #include <cstdint>      //uint_fast64_t
 #include <climits>      //CHAR_BIT
-#include <utility>      //move
-#include <vector>
-#include <string>
+#include <utility>      //move, swap
+#include <vector>       //vector
+#include <string>       //string
 #include <iostream>     //ostream
 #include <sstream>      //ostringstream
 #include <cassert>      //assert
 #include <algorithm>    //reverse
-#include <type_traits>  //is_integral, is_signed, make_signed_t, remove_cv_t
+#include <type_traits>  //is_signed, make_signed_t
 #include <stdexcept>    //invalid_argument, runtime_error
 
 typedef uint_fast64_t               __Int;
@@ -113,6 +113,7 @@ static int unhex(char c)
 }
 
 //return:
+//  0       empty string
 //  2       base is 2
 //  3       for "0", "-0", "+0", base is 10
 //  8       base is 8
@@ -277,6 +278,11 @@ public:
     }
     template<typename T>
     __Myt & operator =(const T & a) { from(__SupportTypeT<T>(a)); return *this; }
+    //a.swap(b);
+    void swap(__Myt & a) {
+        std::swap(sign_, a.sign_);
+        data_.swap(a.data_);
+    }
     //+a;
     __Myt operator +() { return *this; }
     //-a;
@@ -453,12 +459,13 @@ private:
     }
     void from(const std::string & a) {
         switch (checkBase(a)) {
+            case 0:
+            case 3:reset(); break;
             case 2: {
                 reset('-' == a[0]);
                 BitOp<__Data> bits(data_);
                 for (auto it = a.rbegin(); it != a.rend() && 'b' != *it && 'B' != *it; bits.write(1, *it++ - '0'));
                 break; }
-            case 3:reset(); break;
             case 8: {
                 reset('-' == a[0]);
                 BitOp<__Data> bits(data_);
@@ -767,6 +774,12 @@ private:
     __Data data_;
     bool sign_ = false;
 };
+
+//swap(a, b);
+inline void swap(HugeNumber & a, HugeNumber & b)
+{
+    a.swap(b);
+}
 
 #endif
 
