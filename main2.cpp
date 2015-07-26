@@ -732,8 +732,24 @@ void test_shift()
     const Int a(aa), b(bb), q(qq), r(rr), p(a - r); \
     ASSERT_EQ(p, Int(b) *= q);  \
     ASSERT_EQ(p, Int(b) *= qq); \
+    ASSERT_EQ(p, Int(q) *= b);  \
+    ASSERT_EQ(p, Int(q) *= bb); \
     ASSERT_EQ(q, Int(a) /= b);  \
-    ASSERT_EQ(q, Int(a) /= bb); \
+break;    ASSERT_EQ(q, Int(a) /= bb); \
+    ASSERT_EQ(r, Int(a) %= b);  \
+    ASSERT_EQ(r, Int(a) %= bb); \
+    ASSERT_EQ(p, b * q);        \
+    ASSERT_EQ(p, b * qq);       \
+    ASSERT_EQ(p, bb * q);       \
+    ASSERT_EQ(p, q * b);        \
+    ASSERT_EQ(p, q * bb);       \
+    ASSERT_EQ(p, qq * b);       \
+    ASSERT_EQ(q, a / b);        \
+    ASSERT_EQ(q, a / bb);       \
+    ASSERT_EQ(q, aa / b);       \
+    ASSERT_EQ(r, a % b);        \
+    ASSERT_EQ(r, a % bb);       \
+    ASSERT_EQ(r, aa % b);       \
 }while(0)
 
 template<typename T>
@@ -751,14 +767,105 @@ void test_mul_div_type()
     const T mi = numeric_limits<T>::min();
     const T z = 0;
     for(T i = 0;i <= 10;++i){
-        test_mul_div_type(ma - i, 1 + i);
-        test_mul_div_type(ma - i, -1 - i);
-        test_mul_div_type(mi + i, 1 + i);
-        test_mul_div_type(mi + i, -1 - i);
-        test_mul_div_type(z + i, 1 + i);
-        test_mul_div_type(z + i, -1 - i);
-        test_mul_div_type(z - i, 1 + i);
-        test_mul_div_type(z - i, -1 - i);
+        if (i) {
+            test_mul_div_type<T>(ma - i, i);
+            test_mul_div_type<T>(ma - i, i);
+            test_mul_div_type<T>(mi + i, i);
+            test_mul_div_type<T>(mi + i, i);
+        }
+        test_mul_div_type<T>(z + i, 1 + i);
+        test_mul_div_type<T>(z + i, -1 - i);
+        test_mul_div_type<T>(z - i, 1 + i);
+        test_mul_div_type<T>(z - i, -1 - i);
+    }
+}
+
+void test_mul_div_str_exp(string aa, string bb, string qq, string rr)
+{
+    constexpr int kSize = 200;
+    char ca[kSize], cb[kSize], cq[kSize], cr[kSize];
+    const char(&cca)[kSize] = ca;
+    const char(&ccb)[kSize] = cb;
+    const char(&ccq)[kSize] = cq;
+    const char(&ccr)[kSize] = cr;
+    strcpy(ca, aa.c_str());
+    strcpy(cb, bb.c_str());
+    strcpy(cq, qq.c_str());
+    strcpy(cr, rr.c_str());
+    __TEST_MUL_DIV(aa, bb, qq, rr);
+    __TEST_MUL_DIV(ca, cb, cq, cr);
+    __TEST_MUL_DIV(cca, ccb, ccq, ccr);
+}
+
+#undef __TEST_MUL_DIV
+
+void test_mul_div_str_sign(string a, string b, string q, string r)
+{
+    test_mul_div_str_exp(a, b, q, r);
+    test_mul_div_str_exp('-' + a, b, '-' + q, '-' + r);
+    test_mul_div_str_exp(a, '-' + b, '-' + q, r);
+    test_mul_div_str_exp('-' + a, '-' + b, q, '-' + r);
+}
+
+void test_mul_div_str()
+{
+    {
+        test_mul_div_str_sign("0", "1", "0", "0");
+        test_mul_div_str_sign("1", "1", "1", "0");
+        test_mul_div_str_sign("2", "1", "2", "0");
+        test_mul_div_str_sign("15000000000000000000", "1", "15000000000000000000", "0");
+        test_mul_div_str_sign("6666666666666666666666666666666666666", "1", "6666666666666666666666666666666666666", "0");
+    } {
+        test_mul_div_str_sign("0", "1234", "0", "0");
+        test_mul_div_str_sign("1", "1234", "0", "1");
+        test_mul_div_str_sign("1233", "1234", "0", "1233");
+        test_mul_div_str_sign("1234", "1234", "1", "0");
+        test_mul_div_str_sign("1235", "1234", "1", "1");
+        test_mul_div_str_sign("2468", "1234", "2", "0");
+        test_mul_div_str_sign("12340000000000000678", "1234", "10000000000000000", "678");
+        test_mul_div_str_sign("1234000000000000000000000000000000000000000789", "1234", "1000000000000000000000000000000000000000000", "789");
+    } {
+        test_mul_div_str_sign("0", "10000000000000000000", "0", "0");
+        test_mul_div_str_sign("1", "10000000000000000000", "0", "1");
+        test_mul_div_str_sign("9999999999999999999", "10000000000000000000", "0", "9999999999999999999");
+        test_mul_div_str_sign("10000000000000000000", "10000000000000000000", "1", "0");
+        test_mul_div_str_sign("10000000000000000001", "10000000000000000000", "1", "1");
+        test_mul_div_str_sign(
+            "2345746587695950431310000000006666666666",
+                                "10000000000000000000",
+            "234574658769595043131",      "6666666666");
+        test_mul_div_str_sign(
+            "64569874673221432524624352345746587695950431310000000006666666666",
+                                                         "10000000000000000000",
+            "6456987467322143252462435234574658769595043131",      "6666666666");
+    } {
+        test_mul_div_str_sign("0", "1000000000000000000000000000000000000000000", "0", "0");
+        test_mul_div_str_sign("1", "1000000000000000000000000000000000000000000", "0", "1");
+        test_mul_div_str_sign("10000000000000000000", "1000000000000000000000000000000000000000000", "0", "10000000000000000000");
+        test_mul_div_str_sign(
+             "999999999999999999999999999999999999999999", 
+            "1000000000000000000000000000000000000000000", "0", "999999999999999999999999999999999999999999");
+        test_mul_div_str_sign(
+            "1000000000000000000000000000000000000000000",
+            "1000000000000000000000000000000000000000000", "1", "0");
+        test_mul_div_str_sign(
+            "1000000000000000000000000000000000000000001",
+            "1000000000000000000000000000000000000000000", "1", "1");
+        test_mul_div_str_sign(
+            "1000000000000000000000000000000066666666666",
+            "1000000000000000000000000000000000000000000", "1", "66666666666");
+        test_mul_div_str_sign(
+            "357354623245241000000000000000000000000000000066666666666",
+                          "1000000000000000000000000000000000000000000",
+            "357354623245241",                            "66666666666");
+        test_mul_div_str_sign(
+            "357354623245241000066666666666666666666666666666666666666",
+                          "1000000000000000000000000000000000000000000",
+            "357354623245241", "66666666666666666666666666666666666666");
+        test_mul_div_str_sign(
+            "45343658567967896058944673546252134132412344562346356357354623245241000066666666666666666666666666666666666666",
+                                                                               "1000000000000000000000000000000000000000000",
+            "45343658567967896058944673546252134132412344562346356357354623245241", "66666666666666666666666666666666666666");
     }
 }
 
@@ -778,6 +885,8 @@ void test_mul_div()
     test_mul_div_type<unsigned long>();
     test_mul_div_type<long long>();
     test_mul_div_type<unsigned long long>();
+    test_mul_div_str();
+    cout << __FUNCTION__ << "() SUCC\n";
 }
 
 int main()

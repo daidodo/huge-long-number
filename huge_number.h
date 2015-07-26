@@ -348,16 +348,19 @@ public:
         return std::move(t);
     }
     //a * b;
+    __Myt operator *(const __Myt & a) const { return (__Myt(*this) *= a); }
     template<class T>
     __Myt operator *(const T & a) const { return (__Myt(*this) *= a); }
     template<class T>
     friend __Myt operator *(const T & a, const __Myt & b) { return (b * a); }
     //a / b;
+    __Myt operator /(const __Myt & a) const { return (__Myt(*this) /= a); }
     template<class T>
     __Myt operator /(const T & a) const { return (__Myt(*this) /= a); }
     template<class T>
     friend __Myt operator /(const T & a, const __Myt & b) { return (__Myt(a) /= b); }
     //a % b;
+    __Myt operator %(const __Myt & a) const { return (__Myt(*this) %= a); }
     template<class T>
     __Myt operator %(const T & a) const { return (__Myt(*this) %= a); }
     template<class T>
@@ -551,8 +554,6 @@ private:
             data_.swap(r.data_);
             shrink();
         }
-        if(*this < 0)
-            *this += a;
     }
     void divModAbs(const __Myt & a, __Myt & q, __Myt & r, int p) const{
         r.data_ = data_;
@@ -756,7 +757,11 @@ private:
         return r;
     }
     static int topBit(const __Data & a){
-        return 0;   //TODO
+        if (a.empty())
+            return 0;
+        int i = kEachBits - 1;
+        for (; i >= 0 && !(a.back() & (__Int(1) << i)); --i);
+        return i + kEachBits * (a.size() - 1);
     }
     //fields
     __Data data_;
