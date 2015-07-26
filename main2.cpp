@@ -36,7 +36,7 @@ void assert_eq(string a, const Int & b, int line, const char * func)
 {
     if(a == b.toString())
         return;
-    cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << ' ' << b.debugString() << endl
+    cerr << "not equal at line " << line << ":\na=" << a << "\nb=" << b << endl
         << "in " << func << endl;
     throw 1;
 }
@@ -938,7 +938,7 @@ void test_swap()
     cout << __FUNCTION__ << "() SUCC\n";
 }
 
-int main1()
+int main()
 {
     test_ctor();
     test_sign();
@@ -952,7 +952,7 @@ int main1()
     return 0;
 }
 
-int main()
+int main2()
 {
     HugeNumber a(1);
     for (int i = 2; i <= 1000; ++i)

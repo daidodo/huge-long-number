@@ -7,7 +7,6 @@
 #include <vector>       //vector
 #include <string>       //string
 #include <iostream>     //ostream
-#include <sstream>      //ostringstream
 #include <cassert>      //assert
 #include <algorithm>    //reverse
 #include <type_traits>  //is_signed, make_signed_t
@@ -23,7 +22,7 @@ template<typename T1, typename T2>
 struct __TypeSelect<true, T1, T2> { typedef T1 type; };
 
 template<typename T>
-struct __SupportType{};
+struct __SupportType;
 
 template<>struct __SupportType<std::string>{typedef const std::string & type;};
 template<>struct __SupportType<const char *>{typedef const std::string & type;};
@@ -57,7 +56,7 @@ template<typename T>
 using __SupportTypeT = typename __SupportType<T>::type;
 
 template<class T, class F>
-static void shrinkTailIf(T & c, F f)
+static void eraseTailIf(T & c, F f)
 {
     auto it = c.rbegin();
     if(it != c.rend() && f(*it)){
@@ -436,16 +435,6 @@ public:
         const bool showbase = (0 != (fmt & os.showbase));
         return (os << a.toString(base, uppercase, showbase));
     }
-
-    //debug only
-    std::string debugString() const {
-        std::ostringstream oss;
-        oss << '{' << (sign_ ? '-' : '+') << ' ';
-        for (auto v : data_)
-            oss << std::hex << v << ' ';
-        oss << '}';
-        return oss.str();
-    }
 private:
     void from(const __SInt & a) {
         reset(a < 0);
@@ -626,7 +615,7 @@ private:
         data_.clear();
     }
     void shrink() {
-        shrinkTailIf(data_, [](auto v) {return (0 == v); });
+        eraseTailIf(data_, [](auto v) {return (0 == v); });
         if (data_.empty() && sign_)
             sign_ = false;
     }
@@ -637,11 +626,9 @@ private:
         if (data_.empty())
             ret.push_back('0');
         else {
-            std::ostringstream oss;
             BitOp<const __Data> bits(data_);
-            for (__Int i; bits.read(N, i); oss << digits[i]);
-            ret = oss.str();
-            shrinkTailIf(ret, [](auto c) {return ('0' == c); });
+            for (__Int i; bits.read(N, i); ret.push_back(digits[i]));
+            eraseTailIf(ret, [](auto c) {return ('0' == c); });
         }
         if (base)
             ret += base;
