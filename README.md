@@ -1,6 +1,6 @@
 # huge-long-number
 
-This is a library of arbitrary range of integers.
+This is a library of arbitrary range of integers written in C++14.
 
 class *`HugeNumber`* can represent arbitrary range of signed integers.
 
