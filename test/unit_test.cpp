@@ -9,11 +9,11 @@ using namespace std;
 
 typedef HugeNumber Int;
 
-#ifdef WIN32
+#ifdef _WIN32
 #   define __PRETTY_FUNCTION__  __FUNCSIG__
 #endif
 
-#define ASSERT_EQ(a, b)     assert_eq(a, b, __LINE__, __PRETTY_FUNCTION__)
+#define ASSERT_EQ(aa, bb)     assert_eq(aa, bb, __LINE__, __PRETTY_FUNCTION__)
 
 void assert_eq(string a, string b, int line, const char * func)
 {
@@ -231,7 +231,7 @@ void test_ctor()
     test_ctor_type<char>();
     test_ctor_type<wchar_t>();
     test_ctor_type<char16_t>();
-#ifndef WIN32   // char32_t in Visual Studio 2015 RC acts strangely
+#ifndef _WIN32   // char32_t in Visual Studio 2015 RC acts strangely
     test_ctor_type<char32_t>();
 #endif
     test_ctor_type<signed char>();
