@@ -1,14 +1,16 @@
-TARGET := main2
+TARGET = $(SRC:.cpp=)
 
-CXXFLAGS := --std=c++14 -g -Wall
+CXXFLAGS := --std=c++14 -g -Wall -I.. -O2 -DNDEBUG
 
-$(TARGET): force
-	$(CXX) $(CXXFLAGS) -o $@ main2.cpp
+SRC := $(wildcard *.cpp)
+DEP := $(SRC:.cpp=.d)
+
+CXXFLAGS += -MD
+
+all: $(TARGET)
 
 clean: 
 	$(RM) $(TARGET) *.o *.d
 	$(RM) -r *.dSYM
 
-force:
-
-.PHONY: force clean
+.PHONY: all clean

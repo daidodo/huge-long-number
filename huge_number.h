@@ -755,7 +755,7 @@ private:
             return 0;
         int i = kEachBits - 1;
         for (; i >= 0 && !(a.back() & (__Int(1) << i)); --i);
-        return i + kEachBits * (a.size() - 1);
+        return int(i + kEachBits * (a.size() - 1));
     }
     //fields
     __Data data_;
