@@ -1,5 +1,4 @@
 # huge-long-number
-Automatically exported from code.google.com/p/huge-long-number
 
 This is a library of arbitrary range of integers.
 
