@@ -3,11 +3,9 @@ Automatically exported from code.google.com/p/huge-long-number
 
 This is a library of arbitrary range of integers.
 
-class template *`SignedHugeLong`* represents arbitrary range of signed integers.
+class *`HugeNumber`* can represent arbitrary range of signed integers.
 
-class template *`UnsignedHugeLong`* represents arbitrary range of unsigned integers.
-
-Here is the code:
+Here is an example of computing 1000!(=1\*2\*3\*...\*1000):
 
     #include <iostream>
     #include "huge_number.h"
