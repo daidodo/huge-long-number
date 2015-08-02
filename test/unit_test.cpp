@@ -7,7 +7,7 @@
 
 using namespace std;
 
-typedef HugeNumber Int;
+typedef dozerg::HugeNumber Int;
 
 #ifdef _WIN32
 #   define __PRETTY_FUNCTION__  __FUNCSIG__
