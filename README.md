@@ -10,6 +10,7 @@ Here is an example of computing 1000!(=1\*2\*3\*...\*1000):
     #include "huge_number.h"
 
     using namespace std;
+    using namespace dozerg;
 
     int main()
     {
