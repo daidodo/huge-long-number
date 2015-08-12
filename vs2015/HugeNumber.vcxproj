@@ -153,6 +153,7 @@
     <ClInclude Include="..\huge_number.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\test\1000.cpp" />
     <ClCompile Include="..\test\unit_test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

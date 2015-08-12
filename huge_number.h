@@ -761,8 +761,7 @@ namespace dozerg {
     };
 
     //swap(a, b);
-    inline void swap(HugeNumber & a, HugeNumber & b)
-    {
+    inline void swap(HugeNumber & a, HugeNumber & b) {
         a.swap(b);
     }
 } // namespace dozerg

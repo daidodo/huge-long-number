@@ -2,6 +2,7 @@
 #include "huge_number.h"
 
 using namespace std;
+using namespace dozerg;
 
 int main()
 {

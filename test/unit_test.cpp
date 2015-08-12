@@ -220,7 +220,7 @@ void test_ctor()
 {
     {
         Int a, b(a), c(move(a)), d(static_cast<const Int &&>(a));
-        const Int e;
+        const Int e, f(e);
         a = b;
         b = move(c);
         //Int aa(true);
@@ -743,7 +743,7 @@ void test_shift()
     ASSERT_EQ(p, Int(q) *= b);  \
     ASSERT_EQ(p, Int(q) *= bb); \
     ASSERT_EQ(q, Int(a) /= b);  \
-break;    ASSERT_EQ(q, Int(a) /= bb); \
+    ASSERT_EQ(q, Int(a) /= bb); \
     ASSERT_EQ(r, Int(a) %= b);  \
     ASSERT_EQ(r, Int(a) %= bb); \
     ASSERT_EQ(p, b * q);        \
