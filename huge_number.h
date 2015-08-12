@@ -1,39 +1,36 @@
 #ifndef DOZERG_HUGE_NUMBER_20150715
 #define DOZERG_HUGE_NUMBER_20150715
 
-#include <climits>      //CHAR_BIT
+#include <limits>       //numeric_limits
 #include <utility>      //move, swap
 #include <vector>       //vector
 #include <string>       //string
 #include <iostream>     //ostream
 #include <cassert>      //assert
 #include <algorithm>    //reverse
-#include <type_traits>  //is_signed, make_signed_t
+#include <type_traits>  //make_signed_t
 #include <stdexcept>    //invalid_argument, runtime_error
 
 namespace dozerg {
-    namespace {
+
+    class HugeNumber
+    {
+        //types
+        typedef HugeNumber                  __Myt;
         typedef unsigned long long          __Int;
         typedef std::make_signed_t<__Int>   __SInt;
-
-        template<bool B, typename T1, typename T2>
-        struct __TypeSelect { typedef T2 type; };
-
-        template<typename T1, typename T2>
-        struct __TypeSelect<true, T1, T2> { typedef T1 type; };
-
-        template<typename T>
-        struct __SupportType;
-
+        typedef std::vector<__Int>          __Data;
+        template<bool B, typename T1, typename T2>struct __TypeSelect { typedef T2 type; };
+        template<typename T1, typename T2>struct __TypeSelect<true, T1, T2> { typedef T1 type; };
+        template<typename T>struct __SupportType;
         template<>struct __SupportType<std::string> { typedef const std::string & type; };
         template<>struct __SupportType<const char *> { typedef const std::string & type; };
         template<>struct __SupportType<char *> { typedef const std::string & type; };
         //template<size_t N>struct __SupportType<const char [N]>{typedef const std::string & type;};
         template<size_t N>struct __SupportType<char[N]> { typedef const std::string & type; };
-
 #define __SUPPORT_INTEGER(tp)   \
     template<>struct __SupportType<tp>{ \
-        typedef const __TypeSelect<std::is_signed<tp>::value, __SInt, __Int>::type & type; \
+        typedef const __TypeSelect<std::numeric_limits<tp>::is_signed, __SInt, __Int>::type & type; \
     }
         __SUPPORT_INTEGER(char);
         __SUPPORT_INTEGER(wchar_t);
@@ -50,211 +47,14 @@ namespace dozerg {
         __SUPPORT_INTEGER(long long);
         __SUPPORT_INTEGER(unsigned long long);
 #undef __SUPPORT_INTEGER
-
-        template<typename T>
-        using __SupportTypeT = typename __SupportType<T>::type;
-
-        static void multWithTwo(std::string & s, int add)
-        {
-            assert(0 <= add && add < 10);
-            if (!s.empty())
-                for (char & c : s) {
-                    c = (c << 1) + add;
-                    if ((add = (c > 9 ? 1 : 0)))
-                        c -= 10;
-                }
-            if (add)
-                s.push_back(add);
-        }
-
-        static int divByTwo(std::string & s, bool & end)
-        {
-            int c = 0;
-            for (auto it = s.rbegin(); it != s.rend(); ++it) {
-                *it += c * 10;
-                c = (*it & 1);
-                *it /= 2;
-            }
-            const auto p = s.find_last_not_of(char(0)) + 1;
-            end = !p;
-            s.erase(p);
-            return c;
-        }
-
-        static void reverseAdd(std::string & s, int v)
-        {
-            for (int i = 0, j = int(s.size() - 1); i <= j; ++i, --j) {
-                const auto t = s[i];
-                s[i] = s[j] + v;
-                if (i < j)
-                    s[j] = t + v;
-            }
-        }
-
-        static int unhex(char c)
-        {
-            if ('0' <= c && c <= '9')
-                return (c - '0');
-            if ('a' <= c && c <= 'f')
-                return (c - 'a' + 10);
-            return (c - 'A' + 10);
-        }
-
-        //return:
-        //  0       empty string
-        //  2       base is 2
-        //  3       for "0", "-0", "+0", base is 10
-        //  8       base is 8
-        //  10      base is 10
-        //  16      base is 16
-        //  others  error
-        static int checkBase(const std::string & a)
-        {
-            int r = 0;
-            for (auto c : a) {
-                switch (r) {
-                    case 0:
-                        if ('+' == c || '-' == c)
-                            break;
-                    case 1:
-                        if ('0' == c) {
-                            r = 3;
-                            break;
-                        }
-                    case 10:r = ('0' <= c && c <= '9' ? 10 : -1); break;
-                    case 3:
-                        if ('b' == c || 'B' == c) {
-                            r = 5;
-                            break;
-                        } else if ('x' == c || 'X' == c) {
-                            r = 7;
-                            break;
-                        }
-                    case 8:r = ('0' <= c && c < '8' ? 8 : -1); break;
-                    case 2:
-                    case 5:r = ('0' == c || '1' == c ? 2 : -1); break;
-                    case 7:
-                    case 16:r = (('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F') ? 16 : -1); break;
-                }
-                if (r < 0)
-                    break;
-            }
-            return r;
-        }
-
-        template<typename T>
-        T mask(int bits)
-        {
-            constexpr int kEachBits = CHAR_BIT * sizeof(T);
-            return (bits < 1 ? 0 : (bits >= kEachBits ? T(-1) : ((T(1) << bits) - 1)));
-        }
-
-        template<typename T>
-        T getBits(const T & val, int pos, int bits)
-        {
-            return ((val >> pos) & mask<T>(bits));
-        }
-
-        template<typename T>
-        void setBits(T & val, int pos, int bits, const T & v)
-        {
-            const T m = mask<T>(bits);
-            val &= ~(m << pos);
-            val += (v & m) << pos;
-        }
-
-        template<class T>
-        class BitOp
-        {
-            typedef typename T::value_type __Int;
-            static constexpr int kEachBits = CHAR_BIT * sizeof(__Int);
-            T & c_;
-            int p_;
-        public:
-            explicit BitOp(T & c, int p = 0) :c_(c), p_(p) {}
-            void seek(int p) {
-                const int kTotalBits = int(kEachBits * c_.size());
-                p_ = p;
-                if (p_ > kTotalBits)
-                    p_ = kTotalBits;
-                if (p_ < 0)
-                    p_ = 0;
-            }
-            void seekEnd(int p = 0) {
-                const int kTotalBits = int(kEachBits * c_.size());
-                seek(p + kTotalBits);
-            }
-            bool read(int bits, __Int & val) {
-                if (!get(p_, bits, val))
-                    return false;
-                seek(p_ + bits);
-                return true;
-            }
-            bool readReverse(int bits, __Int & val) {
-                if (!get(p_ - bits, bits, val))
-                    return false;
-                seek(p_ - bits);
-                return true;
-            }
-            void write(int bits, const __Int & val) {
-                const int kTotalBits = int(kEachBits * c_.size());
-                if (kTotalBits < p_ + bits)
-                    c_.resize((p_ + bits + kEachBits - 1) / kEachBits);
-                set(p_, bits, val);
-                seek(p_ + bits);
-            }
-            bool writeReverse(int bits, const __Int & val) {
-                if (p_ < bits)
-                    return false;
-                set(p_ -= bits, bits, val);
-                return true;
-            }
-        private:
-            bool get(int p, int bits, __Int & val) const {
-                assert(0 < bits && bits <= kEachBits);
-                const int kTotalBits = int(kEachBits * c_.size());
-                if (p < 0 || kTotalBits <= p)
-                    return false;
-                const int fi = p / kEachBits, ri = p % kEachBits;
-                val = getBits(c_[fi], ri, bits);
-                if (kEachBits < ri + bits && size_t(fi + 1) < c_.size()) {
-                    const int s1 = kEachBits - ri, s2 = bits - s1;
-                    setBits(val, s1, s2, getBits(c_[fi + 1], 0, s2));
-                }
-                return true;
-            }
-            bool set(int p, int bits, const __Int & val) {
-                assert(0 < bits && bits <= kEachBits);
-                const int kTotalBits = int(kEachBits * c_.size());
-                if (p < 0 || kTotalBits <= p)
-                    return false;
-                const int fi = p / kEachBits, ri = p % kEachBits;
-                setBits(c_[fi], ri, bits, val);
-                if (kEachBits < ri + bits && size_t(fi + 1) < c_.size()) {
-                    const int s1 = kEachBits - ri, s2 = bits - s1;
-                    setBits(c_[fi + 1], 0, s2, getBits(val, s1, s2));
-                }
-                return true;
-            }
-        };
-    } // namespace
-
-    class HugeNumber
-    {
-        //types
-        typedef HugeNumber          __Myt;
-        typedef std::vector<__Int>  __Data;
+        template<typename T>using __SupportTypeT = typename __SupportType<T>::type;
         //constants
-        static constexpr int kEachBytes = sizeof(__Int);
-        static constexpr int kEachBits = CHAR_BIT * kEachBytes;
+        static constexpr int kEachBits = std::numeric_limits<__Int>::digits;
     public:
         //functions
         HugeNumber() {}  //Cannot be default for "const HugeNumber a;"
         HugeNumber(const __Myt & a) = default;
-        HugeNumber(__Myt && a)
-            : data_(std::move(a.data_))
-            , sign_(a.sign_)
-        {}
+        HugeNumber(__Myt && a) : data_(std::move(a.data_)), sign_(a.sign_) {}
         template<typename T>
         explicit HugeNumber(const T & a) { from(__SupportTypeT<T>(a)); }
         __Myt & operator =(const __Myt & a) = default;
@@ -268,18 +68,14 @@ namespace dozerg {
         template<typename T>
         __Myt & operator =(const T & a) { from(__SupportTypeT<T>(a)); return *this; }
         //a.swap(b);
-        void swap(__Myt & a) {
+        void swap(__Myt & a) noexcept {
             std::swap(sign_, a.sign_);
             data_.swap(a.data_);
         }
         //+a;
         __Myt operator +() { return *this; }
         //-a;
-        __Myt operator -() {
-            __Myt t(*this);
-            t.negate();
-            return std::move(t);
-        }
+        __Myt operator -() { return std::move(__Myt(*this).negate()); }
         //++a;
         __Myt & operator ++() { *this += 1; return *this; }
         //--a;
@@ -317,15 +113,9 @@ namespace dozerg {
         template<typename T>
         __Myt & operator %=(const T & a) { return (*this %= __Myt(a)); }
         //a <<= n;
-        __Myt & operator <<=(int a) {
-            (a < 0 ? shiftRight(-__SInt(a)) : shiftLeft(a));
-            return *this;
-        }
+        __Myt & operator <<=(int a) { (a < 0 ? shiftRight(-a) : shiftLeft(a)); return *this; }
         //a >>= n;
-        __Myt & operator >>=(int a) {
-            (a < 0 ? shiftLeft(-__SInt(a)) : shiftRight(a));
-            return *this;
-        }
+        __Myt & operator >>=(int a) { (a < 0 ? shiftLeft(-a) : shiftRight(a)); return *this; }
         //a + b;
         __Myt operator +(const __Myt & a) const { return (__Myt(*this) += a); }
         template<class T>
@@ -337,11 +127,7 @@ namespace dozerg {
         template<class T>
         __Myt operator -(const T & a) const { return (__Myt(*this) -= a); }
         template<class T>
-        friend __Myt operator -(const T & a, const __Myt & b) {
-            auto t(b - a);
-            t.negate();
-            return std::move(t);
-        }
+        friend __Myt operator -(const T & a, const __Myt & b) { return std::move(__Myt(b - a).negate()); }
         //a * b;
         __Myt operator *(const __Myt & a) const { return (__Myt(*this) *= a); }
         template<class T>
@@ -442,13 +228,13 @@ namespace dozerg {
                 case 3:reset(); break;
                 case 2: {
                     reset('-' == a[0]);
-                    BitOp<__Data> bits(data_);
-                    for (auto it = a.rbegin(); it != a.rend() && 'b' != *it && 'B' != *it; bits.write(1, *it++ - '0'));
+                    int p = 0;
+                    for (auto it = a.rbegin(); it != a.rend() && 'b' != *it && 'B' != *it; toBits<1>(data_, p, *it++ - '0'));
                     break; }
                 case 8: {
                     reset('-' == a[0]);
-                    BitOp<__Data> bits(data_);
-                    for (auto it = a.rbegin(); it != a.rend() && '+' != *it && '-' != *it; bits.write(3, *it++ - '0'));
+                    int p = 0;
+                    for (auto it = a.rbegin(); it != a.rend() && '+' != *it && '-' != *it; toBits<3>(data_, p, *it++ - '0'));
                     break; }
                 case 10: {
                     reset('-' == a[0]);
@@ -456,21 +242,40 @@ namespace dozerg {
                     if ('+' == t[0] || '-' == t[0])
                         t[0] = '0';
                     reverseAdd(t, -'0');
-                    BitOp<__Data> bits(data_);
-                    for (bool end = false; !end; bits.write(1, divByTwo(t, end)));
+                    int p = 0;
+                    for (bool end = false; !end; toBitsF<1>(data_, p, [&t, &end] {
+                        int c = 0;
+                        for (auto it = t.rbegin(); it != t.rend(); ++it) {
+                            *it += c * 10;
+                            c = (*it & 1);
+                            *it /= 2;
+                        }
+                        const auto p = t.find_last_not_of(char(0)) + 1;
+                        end = !p;
+                        t.erase(p);
+                        return c;
+                    }));
                     break; }
                 case 16: {
                     reset('-' == a[0]);
-                    BitOp<__Data> bits(data_);
-                    for (auto it = a.rbegin(); it != a.rend() && 'x' != *it && 'X' != *it; bits.write(4, unhex(*it++)));
+                    int p = 0;
+                    for (auto it = a.rbegin(); it != a.rend() && 'x' != *it && 'X' != *it; toBitsF<4>(data_, p, [&it] {
+                        const char c = *it++;
+                        if ('0' <= c && c <= '9')
+                            return (c - '0');
+                        if ('a' <= c && c <= 'f')
+                            return (c - 'a' + 10);
+                        return (c - 'A' + 10);
+                    }));
                     break; }
                 default:throw std::invalid_argument("Input is not an integer number");
             }
             shrink();
         }
-        void negate() {
+        __Myt & negate() {
             if (*this)
                 sign_ = !sign_;
+            return *this;
         }
         void add(const __Int & a) { add(false, a); }
         void add(const __SInt & a) { add((a < 0), abs(a)); }
@@ -506,10 +311,11 @@ namespace dozerg {
             if (mulSign(s, a.empty(), false))
                 return;
             __Myt t(*this), r;
-            BitOp<const __Data> bits(a);
-            for (__Int i = 0; bits.read(1, i); t <<= 1)
+            forBits<1>(a, 0, [&r, &t](const auto & i) {
                 if (i)
                     r += t;
+                t <<= 1;
+            });
             data_.swap(r.data_);
             shrink();
         }
@@ -518,8 +324,8 @@ namespace dozerg {
                 throw std::runtime_error("Divided by 0");
             if (!*this)
                 return;
-            const int p = topBit(data_) - topBit(a.data_);
-            if (p >= 0) {
+            const int p = topBit(data_) - topBit(a.data_) + 1;
+            if (p > 0) {
                 __Myt d, r;
                 divModAbs(a, d, r, p);
                 data_.swap(d.data_);
@@ -533,8 +339,8 @@ namespace dozerg {
                 throw std::runtime_error("Divided by 0");
             if (!*this)
                 return;
-            const int p = topBit(data_) - topBit(a.data_);
-            if (p >= 0) {
+            const int p = topBit(data_) - topBit(a.data_) + 1;
+            if (p > 0) {
                 __Myt q, r;
                 divModAbs(a, q, r, p);
                 data_.swap(r.data_);
@@ -543,37 +349,38 @@ namespace dozerg {
         }
         void divModAbs(const __Myt & a, __Myt & q, __Myt & r, int p) const {
             r.data_ = data_;
-            q.data_.resize((p + kEachBits) / kEachBits);
-            BitOp<__Data> bits(q.data_, p + 1);
-            __Myt t(a << p);
+            q.data_.clear();
+            assert(0 < p);
+            __Myt t(a << (p - 1));
             t.sign_ = false;
-            assert(0 <= p);
             for (;; t >>= 1) {
                 if (t <= r) {
                     r -= t;
-                    bits.writeReverse(1, 1);
+                    toBitsReverse<1>(q.data_, p, 1);
                 } else
-                    bits.writeReverse(1, 0);    //OPT
-                if (--p < 0)
+                    --p;
+                if (p < 1)
                     break;
             }
         }
-        void shiftLeft(const __Int & a) {
+        void shiftLeft(int a) {
+            if (a < 0)
+                throw std::invalid_argument("invalid shift bits");
             if (!a || !*this)
                 return;
-            __Data r(size_t(a + kEachBits - 1) / kEachBits);
-            BitOp<__Data> bits(r, int(a));
+            __Data r;
             for (const auto & v : data_)
-                bits.write(kEachBits, v);
+                toBits<kEachBits>(r, a, v);
             data_.swap(r);
             shrink();
         }
-        void shiftRight(const __Int & a) {
+        void shiftRight(int a) {
+            if (a < 0)
+                throw std::invalid_argument("invalid shift bits");
             if (!a)
                 return;
             __Data r;
-            BitOp<__Data> bits(data_, int(a));
-            for (__Int v = 0; bits.read(kEachBits, v); r.push_back(v));
+            forBits<kEachBits>(data_, a, [&r](const auto & v) {r.push_back(v); });
             data_.swap(r);
             shrink();
         }
@@ -616,8 +423,7 @@ namespace dozerg {
             if (data_.empty())
                 ret.push_back('0');
             else {
-                BitOp<const __Data> bits(data_);
-                for (__Int i; bits.read(N, i); ret.push_back(digits[i]));
+                forBits<N>(data_, 0, [&ret, &digits](const auto & i) {ret.push_back(digits[i]); });
                 eraseTailIf(ret, [](auto c) {return ('0' == c); });
             }
             if (base)
@@ -629,9 +435,18 @@ namespace dozerg {
         }
         std::string toString10() const {
             std::string ret;
-            BitOp<const __Data> bits(data_);
-            bits.seekEnd();
-            for (__Int i; bits.readReverse(1, i); multWithTwo(ret, static_cast<int>(i)));
+            forBitsReverse<1>(data_, 0, [&ret](const auto & v) {
+                int add = static_cast<int>(v);
+                assert(0 <= add && add < 10);
+                if (!ret.empty())
+                    for (char & c : ret) {
+                        c = (c << 1) + add;
+                        if ((add = (c > 9 ? 1 : 0)))
+                            c -= 10;
+                    }
+                if (add)
+                    ret.push_back(add);
+            });
             if (ret.empty())
                 ret.push_back(0);
             if (sign_)
@@ -748,12 +563,125 @@ namespace dozerg {
             return int(i + kEachBits * (a.size() - 1));
         }
         template<class T, class F>
-        static void eraseTailIf(T & c, F f) {
+        static void eraseTailIf(T & c, F && f) {
             auto it = c.rbegin();
             if (it != c.rend() && f(*it)) {
                 for (++it; it != c.rend() && f(*it); ++it);
                 c.erase(it.base(), c.end());
             }
+        }
+        static constexpr __Int mask(int bits) {
+            return (bits < 1 ? 0 : (bits >= kEachBits ? __Int(-1) : ((__Int(1) << bits) - 1)));
+        }
+        static __Int getBits(const __Int & val, int from, int bits) {
+            assert(0 <= from && from < kEachBits);
+            return ((val >> from) & mask(bits));
+        }
+        static void setBits(__Int & ret, int from, int bits, const __Int & val) {
+            assert(0 <= from && from < kEachBits);
+            const __Int m = mask(bits);
+            ret &= ~(m << from);
+            ret += (val & m) << from;
+        }
+        template<int N>
+        static __Int getBits(const __Data & data, int from) {
+            static_assert(0 < N && N <= kEachBits, "read invlaid bits");
+            const int fi = from / kEachBits, ri = from % kEachBits;
+            assert(fi < data.size());
+            __Int val = getBits(data[fi], ri, N);
+            if (kEachBits - N < ri && size_t(fi + 1) < data.size()) {
+                const int s1 = kEachBits - ri, s2 = N - s1;
+                setBits(val, s1, s2, getBits(data[fi + 1], 0, s2));
+            }
+            return val;
+        }
+        template<int N>
+        static void setBits(__Data & data, int from, const __Int & val) {
+            static_assert(0 < N && N <= kEachBits, "write invalid bits");
+            const int fi = from / kEachBits, ri = from % kEachBits;
+            assert(fi < data.size());
+            setBits(data[fi], ri, N, val);
+            if (kEachBits - N < ri && size_t(fi + 1) < data.size()) {
+                const int s1 = kEachBits - ri, s2 = N - s1;
+                setBits(data[fi + 1], 0, s2, getBits(val, s1, s2));
+            }
+        }
+        template<int N, class F>
+        static void forBits(const __Data & data, int from, F && func) {
+            for (const int kTotalBits = int(kEachBits * data.size()); from < kTotalBits; from += N)
+                func(getBits<N>(data, from));
+        }
+        template<int N, class F>
+        static void forBitsReverse(const __Data & data, int from, F && func) {
+            for (const int kTotalBits = int(kEachBits * data.size()); from < kTotalBits; from += N)
+                func(getBits<N>(data, kTotalBits - N - from));
+        }
+        template<int N>
+        static void toBits(__Data & data, int & from, const __Int & val) {
+            const int kTotalBits = int(kEachBits * data.size());
+            if (kTotalBits < from + N)
+                data.resize((from + N + kEachBits - 1) / kEachBits);
+            setBits<N>(data, from, val);
+            from += N;
+        }
+        template<int N, class F>
+        static void toBitsF(__Data & data, int & from, F && func) { toBits<N>(data, from, func()); }
+        template<int N>
+        static void toBitsReverse(__Data & data, int & from, const __Int & val) {
+            assert(from >= N);
+            const int kTotalBits = int(kEachBits * data.size());
+            if (kTotalBits < from)
+                data.resize((from + kEachBits - 1) / kEachBits);
+            setBits<N>(data, from - N, val);
+            from -= N;
+        }
+        static void reverseAdd(std::string & s, int v) {
+            for (int i = 0, j = int(s.size() - 1); i <= j; ++i, --j) {
+                const auto t = s[i];
+                s[i] = s[j] + v;
+                if (i < j)
+                    s[j] = t + v;
+            }
+        }
+        //return:
+        //  0       empty string
+        //  2       base is 2
+        //  3       for "0", "-0", "+0", base is 10
+        //  8       base is 8
+        //  10      base is 10
+        //  16      base is 16
+        //  others  error
+        static int checkBase(const std::string & a) {
+            int r = 0;
+            for (auto c : a) {
+                switch (r) {
+                    case 0:
+                        if ('+' == c || '-' == c)
+                            break;
+                    case 1:
+                        if ('0' == c) {
+                            r = 3;
+                            break;
+                        }
+                    case 10:r = ('0' <= c && c <= '9' ? 10 : -1); break;
+                    case 3:
+                        if ('b' == c || 'B' == c) {
+                            r = 5;
+                            break;
+                        } else if ('x' == c || 'X' == c) {
+                            r = 7;
+                            break;
+                        }
+                    case 8:r = ('0' <= c && c < '8' ? 8 : -1); break;
+                    case 2:
+                    case 5:r = ('0' == c || '1' == c ? 2 : -1); break;
+                    case 7:
+                    case 16:r = (('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F') ? 16 : -1); break;
+                }
+                if (r < 0)
+                    break;
+            }
+            return r;
         }
         //fields
         __Data data_;
@@ -761,7 +689,7 @@ namespace dozerg {
     };
 
     //swap(a, b);
-    inline void swap(HugeNumber & a, HugeNumber & b) {
+    inline void swap(HugeNumber & a, HugeNumber & b) noexcept {
         a.swap(b);
     }
 } // namespace dozerg
