@@ -1,6 +1,6 @@
 TARGET = $(SRC:.cpp=)
 
-CXXFLAGS := --std=c++14 -g -Wall -I.. -O2 -DNDEBUG
+CXXFLAGS := --std=c++14 -g -Wall -I.. #-O2 -DNDEBUG
 
 SRC := $(wildcard *.cpp)
 DEP := $(SRC:.cpp=.d)

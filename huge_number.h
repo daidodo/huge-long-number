@@ -23,30 +23,6 @@ namespace dozerg {
         template<bool B, typename T1, typename T2>struct __TypeSelect { typedef T2 type; };
         template<typename T1, typename T2>struct __TypeSelect<true, T1, T2> { typedef T1 type; };
         template<typename T>struct __SupportType;
-        template<>struct __SupportType<std::string> { typedef const std::string & type; };
-        template<>struct __SupportType<const char *> { typedef const std::string & type; };
-        template<>struct __SupportType<char *> { typedef const std::string & type; };
-        //template<size_t N>struct __SupportType<const char [N]>{typedef const std::string & type;};
-        template<size_t N>struct __SupportType<char[N]> { typedef const std::string & type; };
-#define __SUPPORT_INTEGER(tp)   \
-    template<>struct __SupportType<tp>{ \
-        typedef const __TypeSelect<std::numeric_limits<tp>::is_signed, __SInt, __Int>::type & type; \
-    }
-        __SUPPORT_INTEGER(char);
-        __SUPPORT_INTEGER(wchar_t);
-        __SUPPORT_INTEGER(char16_t);
-        __SUPPORT_INTEGER(char32_t);
-        __SUPPORT_INTEGER(signed char);
-        __SUPPORT_INTEGER(unsigned char);
-        __SUPPORT_INTEGER(short);
-        __SUPPORT_INTEGER(unsigned short);
-        __SUPPORT_INTEGER(int);
-        __SUPPORT_INTEGER(unsigned int);
-        __SUPPORT_INTEGER(long);
-        __SUPPORT_INTEGER(unsigned long);
-        __SUPPORT_INTEGER(long long);
-        __SUPPORT_INTEGER(unsigned long long);
-#undef __SUPPORT_INTEGER
         template<typename T>using __SupportTypeT = typename __SupportType<T>::type;
         //constants
         static constexpr int kEachBits = std::numeric_limits<__Int>::digits;
@@ -687,6 +663,32 @@ namespace dozerg {
         __Data data_;
         bool sign_ = false;
     };
+
+    //explicit specialization for member class template
+    template<>struct HugeNumber::__SupportType<std::string> { typedef const std::string & type; };
+    template<>struct HugeNumber::__SupportType<const char *> { typedef const std::string & type; };
+    template<>struct HugeNumber::__SupportType<char *> { typedef const std::string & type; };
+    //template<size_t N>struct HugeNumber::__SupportType<const char [N]>{typedef const std::string & type;};
+    template<size_t N>struct HugeNumber::__SupportType<char[N]> { typedef const std::string & type; };
+#define __SUPPORT_INTEGER(tp)   \
+    template<>struct HugeNumber::__SupportType<tp>{ \
+        typedef const __TypeSelect<std::numeric_limits<tp>::is_signed, __SInt, __Int>::type & type; \
+    }
+    __SUPPORT_INTEGER(char);
+    __SUPPORT_INTEGER(wchar_t);
+    __SUPPORT_INTEGER(char16_t);
+    __SUPPORT_INTEGER(char32_t);
+    __SUPPORT_INTEGER(signed char);
+    __SUPPORT_INTEGER(unsigned char);
+    __SUPPORT_INTEGER(short);
+    __SUPPORT_INTEGER(unsigned short);
+    __SUPPORT_INTEGER(int);
+    __SUPPORT_INTEGER(unsigned int);
+    __SUPPORT_INTEGER(long);
+    __SUPPORT_INTEGER(unsigned long);
+    __SUPPORT_INTEGER(long long);
+    __SUPPORT_INTEGER(unsigned long long);
+#undef __SUPPORT_INTEGER
 
     //swap(a, b);
     inline void swap(HugeNumber & a, HugeNumber & b) noexcept {
