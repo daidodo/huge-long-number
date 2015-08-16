@@ -563,7 +563,7 @@ namespace dozerg {
         static __Int getBits(const __Data & data, int from) {
             static_assert(0 < N && N <= kEachBits, "read invlaid bits");
             const int fi = from / kEachBits, ri = from % kEachBits;
-            assert(fi < data.size());
+            assert(size_t(fi) < data.size());
             __Int val = getBits(data[fi], ri, N);
             if (kEachBits - N < ri && size_t(fi + 1) < data.size()) {
                 const int s1 = kEachBits - ri, s2 = N - s1;
@@ -575,7 +575,7 @@ namespace dozerg {
         static void setBits(__Data & data, int from, const __Int & val) {
             static_assert(0 < N && N <= kEachBits, "write invalid bits");
             const int fi = from / kEachBits, ri = from % kEachBits;
-            assert(fi < data.size());
+            assert(size_t(fi) < data.size());
             setBits(data[fi], ri, N, val);
             if (kEachBits - N < ri && size_t(fi + 1) < data.size()) {
                 const int s1 = kEachBits - ri, s2 = N - s1;
