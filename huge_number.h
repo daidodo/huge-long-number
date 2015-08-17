@@ -93,39 +93,39 @@ namespace dozerg {
         //a >>= n;
         __Myt & operator >>=(int a) { (a < 0 ? shiftLeft(-a) : shiftRight(a)); return *this; }
         //a + b;
-        __Myt operator +(const __Myt & a) const { return (__Myt(*this) += a); }
+        __Myt operator +(const __Myt & a) const { return std::move(__Myt(*this) += a); }
         template<class T>
-        __Myt operator +(const T & a) const { return (__Myt(*this) += a); }
+        __Myt operator +(const T & a) const { return std::move(__Myt(*this) += a); }
         template<class T>
         friend __Myt operator +(const T & a, const __Myt & b) { return (b + a); }
         //a - b;
-        __Myt operator -(const __Myt & a) const { return (__Myt(*this) -= a); }
+        __Myt operator -(const __Myt & a) const { return std::move(__Myt(*this) -= a); }
         template<class T>
-        __Myt operator -(const T & a) const { return (__Myt(*this) -= a); }
+        __Myt operator -(const T & a) const { return std::move(__Myt(*this) -= a); }
         template<class T>
         friend __Myt operator -(const T & a, const __Myt & b) { return std::move(__Myt(b - a).negate()); }
         //a * b;
-        __Myt operator *(const __Myt & a) const { return (__Myt(*this) *= a); }
+        __Myt operator *(const __Myt & a) const { return std::move(__Myt(*this) *= a); }
         template<class T>
-        __Myt operator *(const T & a) const { return (__Myt(*this) *= a); }
+        __Myt operator *(const T & a) const { return std::move(__Myt(*this) *= a); }
         template<class T>
         friend __Myt operator *(const T & a, const __Myt & b) { return (b * a); }
         //a / b;
-        __Myt operator /(const __Myt & a) const { return (__Myt(*this) /= a); }
+        __Myt operator /(const __Myt & a) const { return std::move(__Myt(*this) /= a); }
         template<class T>
-        __Myt operator /(const T & a) const { return (__Myt(*this) /= a); }
+        __Myt operator /(const T & a) const { return std::move(__Myt(*this) /= a); }
         template<class T>
-        friend __Myt operator /(const T & a, const __Myt & b) { return (__Myt(a) /= b); }
+        friend __Myt operator /(const T & a, const __Myt & b) { return std::move(__Myt(a) /= b); }
         //a % b;
-        __Myt operator %(const __Myt & a) const { return (__Myt(*this) %= a); }
+        __Myt operator %(const __Myt & a) const { return std::move(__Myt(*this) %= a); }
         template<class T>
-        __Myt operator %(const T & a) const { return (__Myt(*this) %= a); }
+        __Myt operator %(const T & a) const { return std::move(__Myt(*this) %= a); }
         template<class T>
-        friend __Myt operator %(const T & a, const __Myt & b) { return (__Myt(a) %= b); }
+        friend __Myt operator %(const T & a, const __Myt & b) { return std::move(__Myt(a) %= b); }
         //a << n;
-        __Myt operator <<(int a) const { return (__Myt(*this) <<= a); }
+        __Myt operator <<(int a) const { return std::move(__Myt(*this) <<= a); }
         //a >> n;
-        __Myt operator >>(int a) const { return (__Myt(*this) >>= a); }
+        __Myt operator >>(int a) const { return std::move(__Myt(*this) >>= a); }
         //if(a){}
         explicit operator bool() const { return !operator !(); }
         //if(!a){}
@@ -176,7 +176,7 @@ namespace dozerg {
                 case 2:return toStringX<1>(kDigits, (showbase ? (uppercase ? "B0" : "b0") : nullptr));
                 default:;
             }
-            assert(false && "Unsupported base");
+            throw std::invalid_argument("Unsupported base");
             return std::string();
         }
         //cout<<a;
@@ -383,10 +383,7 @@ namespace dozerg {
             return (sign_ ? (-1 == r) : (1 == r));
         }
 
-        void reset(bool s = false) {
-            sign_ = s;
-            data_.clear();
-        }
+        void reset(bool s = false) { sign_ = s; data_.clear(); }
         void shrink() {
             eraseTailIf(data_, [](auto v) {return (0 == v); });
             if (data_.empty() && sign_)
@@ -518,9 +515,7 @@ namespace dozerg {
             sign_ = (sign_ != s);
             return one;
         }
-        static __Int abs(const __SInt & a) {
-            return (a < 0 ? -a : a);
-        }
+        static __Int abs(const __SInt & a) { return (a < 0 ? -a : a); }
         static int plus(__Int & a, const __Int & b) {
             const auto t(a);
             a += b;
@@ -546,19 +541,8 @@ namespace dozerg {
                 c.erase(it.base(), c.end());
             }
         }
-        static constexpr __Int mask(int bits) {
-            return (bits < 1 ? 0 : (bits >= kEachBits ? __Int(-1) : ((__Int(1) << bits) - 1)));
-        }
-        static __Int getBits(const __Int & val, int from, int bits) {
-            assert(0 <= from && from < kEachBits);
-            return ((val >> from) & mask(bits));
-        }
-        static void setBits(__Int & ret, int from, int bits, const __Int & val) {
-            assert(0 <= from && from < kEachBits);
-            const __Int m = mask(bits);
-            ret &= ~(m << from);
-            ret += (val & m) << from;
-        }
+        static constexpr __Int mask(int bits) { return (bits < 1 ? 0 : (bits >= kEachBits ? __Int(-1) : ((__Int(1) << bits) - 1))); }
+        static constexpr __Int getBits(const __Int & val, int from, int bits) { return ((val >> from) & mask(bits)); }
         template<int N>
         static __Int getBits(const __Data & data, int from) {
             static_assert(0 < N && N <= kEachBits, "read invlaid bits");
@@ -571,12 +555,25 @@ namespace dozerg {
             }
             return val;
         }
+        static void setBits(__Int & ret, int from, int bits, const __Int & val) {
+            assert(0 <= from && from < kEachBits);
+            const __Int m = mask(bits);
+            ret &= ~(m << from);
+            ret += (val & m) << from;
+        }
+        template<int N>
+        static void setBits(__Int & ret, int from, const __Int & val) {
+            assert(0 <= from && from < kEachBits);
+            constexpr __Int m = mask(N);
+            ret &= ~(m << from);
+            ret += (val & m) << from;
+        }
         template<int N>
         static void setBits(__Data & data, int from, const __Int & val) {
             static_assert(0 < N && N <= kEachBits, "write invalid bits");
             const int fi = from / kEachBits, ri = from % kEachBits;
             assert(size_t(fi) < data.size());
-            setBits(data[fi], ri, N, val);
+            setBits<N>(data[fi], ri, val);
             if (kEachBits - N < ri && size_t(fi + 1) < data.size()) {
                 const int s1 = kEachBits - ri, s2 = N - s1;
                 setBits(data[fi + 1], 0, s2, getBits(val, s1, s2));
@@ -664,7 +661,7 @@ namespace dozerg {
         bool sign_ = false;
     };
 
-    //explicit specialization for member class template
+    //explicit specializations for member class template
     template<>struct HugeNumber::__SupportType<std::string> { typedef const std::string & type; };
     template<>struct HugeNumber::__SupportType<const char *> { typedef const std::string & type; };
     template<>struct HugeNumber::__SupportType<char *> { typedef const std::string & type; };

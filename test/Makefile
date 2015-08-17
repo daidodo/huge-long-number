@@ -7,7 +7,7 @@ DEP := $(SRC:.cpp=.d)
 
 CXXFLAGS += -MD
 
-all: $(TARGET)
+all: clean $(TARGET)
 
 clean: 
 	$(RM) $(TARGET) *.o *.d
