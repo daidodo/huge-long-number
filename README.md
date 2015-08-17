@@ -1,4 +1,4 @@
-# huge-long-number
+# Huge Long Number
 
 This is a library of arbitrary range of integers written in C++14.
 
@@ -85,3 +85,4 @@ which produces the result:
 
 
 Well, you can check if it's right!
+Tested in VS2015, clang 3.6 and GCC 4.9.
