@@ -6,21 +6,23 @@ class *`HugeNumber`* can represent arbitrary range of signed integers.
 
 Here is an example of computing 1000!(=1\*2\*3\*...\*1000):
 
-    #include <iostream>
-    #include "huge_number.h"
+```C++
+#include <iostream>
+#include "huge_number.h"
 
-    using namespace std;
-    using namespace dozerg;
+using namespace std;
+using namespace dozerg;
 
-    int main()
-    {
-        HugeNumber a(1);
-        for (int i = 2; i <= 1000; ++i)
-            a *= i;
-        cout << "1000! = \n"
-            << a << endl;
-        return 0;
-    }
+int main()
+{
+    HugeNumber a(1);
+    for (int i = 2; i <= 1000; ++i)
+        a *= i;
+    cout << "1000! = \n"
+        << a << endl;
+    return 0;
+}
+```
 
 which produces the result:
 
