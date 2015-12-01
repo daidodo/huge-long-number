@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C7DF7CD51B63ADB600B3B8E0 /* main2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C7DF7CD41B63ADB600B3B8E0 /* main2.cpp */; };
+		B9A561D01C0DC745007C2F7E /* unit_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9A561CF1C0DC745007C2F7E /* unit_test.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,8 +23,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B9A561CF1C0DC745007C2F7E /* unit_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = unit_test.cpp; path = ../test/unit_test.cpp; sourceTree = "<group>"; };
 		C7AD877B1B63AD4D00E1D838 /* HugeNumber */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = HugeNumber; sourceTree = BUILT_PRODUCTS_DIR; };
-		C7DF7CD41B63ADB600B3B8E0 /* main2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main2.cpp; path = ../main2.cpp; sourceTree = "<group>"; };
 		C7DF7CD61B63ADC000B3B8E0 /* huge_number.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = huge_number.h; path = ../huge_number.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -58,8 +58,8 @@
 		C7DF7CD31B63AD9B00B3B8E0 /* HugeNumber */ = {
 			isa = PBXGroup;
 			children = (
+				B9A561CF1C0DC745007C2F7E /* unit_test.cpp */,
 				C7DF7CD61B63ADC000B3B8E0 /* huge_number.h */,
-				C7DF7CD41B63ADB600B3B8E0 /* main2.cpp */,
 			);
 			name = HugeNumber;
 			sourceTree = "<group>";
@@ -90,7 +90,7 @@
 		C7AD87731B63AD4D00E1D838 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
+				LastUpgradeCheck = 0710;
 				ORGANIZATIONNAME = DoZerg;
 				TargetAttributes = {
 					C7AD877A1B63AD4D00E1D838 = {
@@ -120,7 +120,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C7DF7CD51B63ADB600B3B8E0 /* main2.cpp in Sources */,
+				B9A561D01C0DC745007C2F7E /* unit_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +147,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
