@@ -341,7 +341,7 @@ namespace dozerg {
         }
         void shiftLeft(int a) {
             if (a < 0)
-                throw std::invalid_argument("invalid shift bits");
+                throw std::invalid_argument("Invalid shift bits");
             if (!a || !*this)
                 return;
             __Data r;
@@ -352,7 +352,7 @@ namespace dozerg {
         }
         void shiftRight(int a) {
             if (a < 0)
-                throw std::invalid_argument("invalid shift bits");
+                throw std::invalid_argument("Invalid shift bits");
             if (!a)
                 return;
             __Data r;
